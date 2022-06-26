@@ -1,0 +1,6 @@
+Friends/
+*.json
+*.pkl
+# browser driver
+*.exe
+*.log
