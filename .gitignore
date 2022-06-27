@@ -1,6 +1,11 @@
+# generated data
 Friends/
-*.json
-*.pkl
+db_dump.json
+cookies.pkl
+
 # browser driver
 *.exe
 *.log
+
+# other
+blacklist.txt
