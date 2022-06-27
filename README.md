@@ -1,5 +1,5 @@
 # About
-Create relationship graph with Facebook friends that can be opened in Obsidian app.\
+Create relationship graph from Facebook friends that can be opened in Obsidian app. No API keys are needed.\
 Currently only **Windows** is supported.
 
 # Requirements
@@ -11,7 +11,7 @@ Currently only **Windows** is supported.
 Go to project directory.\
 Install required Python modules:
 ```
-pip3 install -r requirements.txt
+pip3 install -r .\requirements.txt
 ```
 Download [Firefox webdriver](https://github.com/mozilla/geckodriver/releases) and extract to project directory.\
 Login to Facebook and save session:
@@ -20,6 +20,7 @@ py .\login.py
 ```
 
 # Usage
+
 ### Example usage
 Get *username*'s friends and their friends:
 ```
