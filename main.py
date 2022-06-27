@@ -45,7 +45,7 @@ def extract_friends(username):
             full_name = page_a[i+1].getText()
         except IndexError:
             pass
-        if not ('/' in username or username in friends):
+        if not ('home.php' in username or '/' in username or username in friends):
             friends[username] = full_name
         i+=1
     return(friends)
@@ -69,7 +69,7 @@ def start_crawling(username, depth):
         for user in queue:
             crawled_i += 1
             print('\n'+"Current depth: "+str(i))
-            print("Current user: "+user)
+            print("Current user: "+user+" ("+users_db[user]+")")
             print("Crawling: "+str(crawled_i)+'/'+str(len(queue)))
             friends = extract_friends(user)
             save_to_graph(users_db[user], friends)
