@@ -14,6 +14,7 @@ parser.add_argument('--pause', '-p', type=int, default=1, help='seconds to pause
 parser.add_argument('--fast', '-f', action="store_true", help='enable fast scanning (do not scroll pages)')
 parser.add_argument('--blacklist', '-b', default='blacklist.txt', help='blacklist file to use (usernames separated with newlines)')
 parser.add_argument('--output', '-o', default='Friends/', help='output folder (followed by slash)')
+parser.add_argument('--limit', '-l', type=int, help='limit users to scan on depth')
 args = parser.parse_args()
 
 # define functions
@@ -34,25 +35,30 @@ def extract_friends(username):
     page_a = content.find_all('a', href=True)
     friends = {}
     i=0
-
     for a in page_a:
         href = a['href']
         username = href[1:]
+        
         try:
             full_name = page_a[i+1].getText()
         except IndexError:
             pass
+        
         if not ('home.php' in username or '/' in username or username in friends):
             friends[username] = full_name
+        
         i+=1
     return(friends)
 
 def scroll_down():
+    # scroll down until page does not change
     while True:
         src1 = driver.page_source
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(1)
         src2 = driver.page_source
+
+        # check if page source changed
         if src1 == src2:
             break
 
@@ -62,15 +68,21 @@ def start_crawling(username, depth):
     next_round = []
     users_crawled = []
 
-    for i in range(depth):
+    # crawling depths/rounds
+    for i in range(1, depth+1):
         crawled_i = 0
         for user in queue:
             crawled_i += 1
 
+            # check if the limit has been reached
+            if args.limit != None and crawled_i > args.limit:
+                break
+
             # print current progress
-            print('\n'+"Current depth: "+str(i))
-            print("Current user: "+user+" ("+users_db[user]+")")
-            print("Crawling: "+str(crawled_i)+'/'+str(len(queue)))
+            print('\n')
+            print("Current depth:", i)
+            print("Current user:", user, "("+users_db[user]+")")
+            print("Crawling:", str(crawled_i)+'/'+str(len(queue)))
 
             friends = extract_friends(user)
             save_to_graph(users_db[user], friends)
@@ -82,9 +94,11 @@ def start_crawling(username, depth):
                 if not (friend in queue or friend in users_crawled or friend in next_round or friend in blacklist):
                     next_round += [friend]
         
+        # update queue
         queue = next_round
         next_round = []
     
+    # dump database to json file
     json.dump(users_db, open("db_dump.json", "w", encoding="utf-8"))
 
 def save_to_graph(full_name, friends):
@@ -96,7 +110,7 @@ def save_to_graph(full_name, friends):
         except UnicodeEncodeError:
             pass
 
-# get blacklist
+# import blacklist
 blacklist = []
 if os.path.isfile(args.blacklist):
     blacklist_file = open(args.blacklist, "r")
@@ -109,15 +123,18 @@ if blacklist != []:
 if not os.path.isdir(args.output):
     os.mkdir(args.output)
 
+# launch browser
 print("Launching Firefox...")
-
-# import cookies
 driver = webdriver.Firefox()
 driver.get("https://www.facebook.com")
+
+# import cookies
 cookies = pickle.load(open("cookies.pkl", "rb"))
 for cookie in cookies:
     driver.add_cookie(cookie)
 
 # start crawling
 start_crawling(args.username, args.depth)
+
+# close browser
 driver.close()
