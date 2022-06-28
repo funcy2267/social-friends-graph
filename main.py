@@ -11,13 +11,15 @@ parser = argparse.ArgumentParser(description='Make a connection graph between fr
 parser.add_argument('username', help='username to start with')
 parser.add_argument('--depth', '-d', type=int, default=1, help='crawling depth (friends of friends)')
 parser.add_argument('--pause', '-p', type=int, default=1, help='seconds to pause between scans')
-parser.add_argument('--fast', '-f', action="store_true", help='enable fast scanning (do not scroll pages)')
+parser.add_argument('--fast', '-f', action='store_true', help='enable fast scanning (do not scroll pages)')
 parser.add_argument('--blacklist', '-b', default='blacklist.txt', help='blacklist file to use (usernames separated with newlines)')
 parser.add_argument('--output', '-o', default='Friends/', help='output folder (followed by slash)')
 parser.add_argument('--limit', '-l', type=int, help='limit users to scan on depth')
 args = parser.parse_args()
 
 # define functions
+
+# get full name from username
 def get_full_name(username):
     driver.get('https://m.facebook.com/'+username)
     time.sleep(args.pause)
@@ -25,14 +27,18 @@ def get_full_name(username):
     content = BeautifulSoup(raw_html, "html.parser").find('h3', {"class": "_6x2x"})
     return(content.prettify().split('\n')[1].strip())
 
+# get list of friends from username
 def extract_friends(username):
     driver.get('https://m.facebook.com/'+username+'?v=friends')
     time.sleep(args.pause)
+	
     if args.fast == False:
         scroll_down()
+	
     raw_html = driver.page_source
     content = BeautifulSoup(raw_html, "html.parser").find('div', {"id": "root"})
     page_a = content.find_all('a', href=True)
+	
     friends = {}
     i=0
     for a in page_a:
@@ -50,8 +56,8 @@ def extract_friends(username):
         i+=1
     return(friends)
 
+# scroll down until page does not change
 def scroll_down():
-    # scroll down until page does not change
     while True:
         src1 = driver.page_source
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -68,7 +74,7 @@ def start_crawling(username, depth):
     next_round = []
     users_crawled = []
 
-    # crawling depths/rounds
+    # crawling rounds
     for i in range(1, depth+1):
         crawled_i = 0
         for user in queue:
@@ -84,11 +90,12 @@ def start_crawling(username, depth):
             print("Current user:", user, "("+users_db[user]+")")
             print("Crawling:", str(crawled_i)+'/'+str(len(queue)))
 
+            # save collected data
             friends = extract_friends(user)
             save_to_graph(users_db[user], friends)
             users_crawled += [user]
 
-            # add user to queue for next round/depth
+            # add user to queue for next round
             for friend in friends:
                 users_db[friend] = friends[friend]
                 if not (friend in queue or friend in users_crawled or friend in next_round or friend in blacklist):
@@ -101,6 +108,7 @@ def start_crawling(username, depth):
     # dump database to json file
     json.dump(users_db, open("db_dump.json", "w", encoding="utf-8"))
 
+# save friends data in proper format
 def save_to_graph(full_name, friends):
     for friend in friends:
         try:
