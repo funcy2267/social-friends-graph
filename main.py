@@ -110,13 +110,13 @@ def start_crawling(username, depth):
 
 # save friends data in proper format
 def save_to_graph(full_name, friends):
+    f = open(args.output+full_name+".md", "a", encoding="utf-8")
     for friend in friends:
         try:
-            f = open(args.output+full_name+".md", "a", encoding="utf-8")
             f.write('[['+friends[friend]+']]'+'\n')
-            f.close()
         except UnicodeEncodeError:
             pass
+    f.close()
 
 # import blacklist
 blacklist = []
