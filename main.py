@@ -12,17 +12,21 @@ BASE_URL = 'https://m.facebook.com/'
 parser = argparse.ArgumentParser(description='Make a connection graph between friends on Facebook.')
 parser.add_argument('username', help='username to start with')
 parser.add_argument('--depth', '-d', type=int, default=1, help='crawling depth (friends of friends)')
-parser.add_argument('--pause', '-p', type=int, default=1, help='seconds to pause between scans')
+parser.add_argument('--pause', '-p', type=int, default=1, help='seconds to pause before going to next page')
 parser.add_argument('--fast', '-f', action='store_true', help='enable fast scanning (do not scroll pages)')
 parser.add_argument('--blacklist', '-b', default='blacklist.txt', help='blacklist file to use (usernames separated with newlines)')
 parser.add_argument('--output', '-o', default='Friends/', help='output folder (followed by slash)')
 parser.add_argument('--limit', '-l', type=int, help='limit users to scan on depth')
 args = parser.parse_args()
 
+# open url
+def open_url(url):
+	driver.get(url)
+	time.sleep(args.pause)
+
 # get full name from username
 def get_full_name(username):
-    driver.get(BASE_URL+username)
-    time.sleep(args.pause)
+    open_url(BASE_URL+username)
     raw_html = driver.page_source
     content = BeautifulSoup(raw_html, "html.parser").find('h3', {"class": "_6x2x"})
     return(content.prettify().split('\n')[1].strip())
@@ -34,8 +38,7 @@ def extract_friends(username):
     else:
         link_joiner = '?'
     
-    driver.get(BASE_URL+username+link_joiner+'v=friends')
-    time.sleep(args.pause)
+    open_url(BASE_URL+username+link_joiner+'v=friends')
 	
     if args.fast == False:
         scroll_down()
@@ -139,7 +142,7 @@ if not os.path.isdir(args.output):
 # launch browser
 print("Launching Firefox...")
 driver = webdriver.Firefox()
-driver.get("https://www.facebook.com")
+open_url('https://www.facebook.com')
 
 # import cookies
 cookies = pickle.load(open("cookies.pkl", "rb"))
