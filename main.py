@@ -8,7 +8,6 @@ from selenium import webdriver
 
 BASE_URL = 'https://m.facebook.com/'
 
-# parse arguments
 parser = argparse.ArgumentParser(description='Make a connection graph between friends on Facebook.')
 parser.add_argument('username', help='username to start with')
 parser.add_argument('--depth', '-d', type=int, default=1, help='crawling depth (friends of friends)')
@@ -17,6 +16,7 @@ parser.add_argument('--fast', '-f', action='store_true', help='enable fast scann
 parser.add_argument('--blacklist', '-b', default='blacklist.txt', help='blacklist file to use (usernames separated with newlines)')
 parser.add_argument('--output', '-o', default='Friends/', help='output folder (followed by slash)')
 parser.add_argument('--limit', '-l', type=int, help='limit users to scan on depth')
+parser.add_argument('--cookies', '-c', default='cookies.pkl', help='use custom cookies file')
 args = parser.parse_args()
 
 # open url
@@ -76,6 +76,16 @@ def scroll_down():
         if src1 == src2:
             break
 
+# save friends data in proper format
+def save_to_graph(full_name, friends):
+    f = open(args.output+full_name+".md", "a", encoding="utf-8")
+    for friend in friends:
+        try:
+            f.write('[['+friends[friend]+']]'+'\n')
+        except UnicodeEncodeError:
+            pass
+    f.close()
+
 def start_crawling(username, depth):
     users_db = {username: get_full_name(username)}
     queue = [username]
@@ -116,16 +126,6 @@ def start_crawling(username, depth):
     # dump database to json file
     json.dump(users_db, open("db_dump.json", "w", encoding="utf-8"))
 
-# save friends data in proper format
-def save_to_graph(full_name, friends):
-    f = open(args.output+full_name+".md", "a", encoding="utf-8")
-    for friend in friends:
-        try:
-            f.write('[['+friends[friend]+']]'+'\n')
-        except UnicodeEncodeError:
-            pass
-    f.close()
-
 # import blacklist
 blacklist = []
 if os.path.isfile(args.blacklist):
@@ -145,7 +145,7 @@ driver = webdriver.Firefox()
 open_url('https://www.facebook.com')
 
 # import cookies
-cookies = pickle.load(open("cookies.pkl", "rb"))
+cookies = pickle.load(open(args.cookies, "rb"))
 for cookie in cookies:
     driver.add_cookie(cookie)
 

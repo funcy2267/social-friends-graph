@@ -4,8 +4,7 @@ db_dump.json
 cookies.pkl
 
 # browser driver
-*.exe
-*.log
+geckodriver*
 
 # other
 blacklist.txt
