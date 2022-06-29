@@ -6,6 +6,8 @@ import os
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
+BASE_URL = 'https://m.facebook.com/'
+
 # parse arguments
 parser = argparse.ArgumentParser(description='Make a connection graph between friends on Facebook.')
 parser.add_argument('username', help='username to start with')
@@ -17,11 +19,9 @@ parser.add_argument('--output', '-o', default='Friends/', help='output folder (f
 parser.add_argument('--limit', '-l', type=int, help='limit users to scan on depth')
 args = parser.parse_args()
 
-# define functions
-
 # get full name from username
 def get_full_name(username):
-    driver.get('https://m.facebook.com/'+username)
+    driver.get(BASE_URL+username)
     time.sleep(args.pause)
     raw_html = driver.page_source
     content = BeautifulSoup(raw_html, "html.parser").find('h3', {"class": "_6x2x"})
@@ -29,7 +29,12 @@ def get_full_name(username):
 
 # get list of friends from username
 def extract_friends(username):
-    driver.get('https://m.facebook.com/'+username+'?v=friends')
+    if 'profile.php?id=' in username:
+        link_joiner = '&'
+    else:
+        link_joiner = '?'
+    
+    driver.get(BASE_URL+username+link_joiner+'v=friends')
     time.sleep(args.pause)
 	
     if args.fast == False:
