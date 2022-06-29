@@ -5,6 +5,7 @@ import time
 from selenium import webdriver
 
 LOGIN_URL = 'https://www.facebook.com/login'
+TFA_URL = 'https://www.facebook.com/checkpoint'
 
 parser = argparse.ArgumentParser(description='Facebook login helper.')
 parser.add_argument('--cookies', '-c', default='cookies.pkl', help='use custom cookies file')
@@ -16,7 +17,7 @@ driver.get(LOGIN_URL)
 print("Login in browser.")
 
 # wait for user to log in
-while driver.current_url == LOGIN_URL:
+while any(x in driver.current_url for x in [LOGIN_URL, TFA_URL]):
     time.sleep(1)
 
 # save cookies

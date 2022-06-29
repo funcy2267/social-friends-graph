@@ -58,7 +58,7 @@ def extract_friends(username):
         except IndexError:
             pass
         
-        if not ('home.php' in username or '/' in username or username in friends):
+        if not (any(x in username for x in ['home.php', '/']) or username in friends):
             friends[username] = full_name
         
         i+=1
@@ -116,7 +116,7 @@ def start_crawling(username, depth):
             # add user to queue for next round
             for friend in friends:
                 users_db[friend] = friends[friend]
-                if not (friend in queue or friend in users_crawled or friend in next_round or friend in blacklist):
+                if friend not in (queue, users_crawled, next_round, blacklist):
                     next_round += [friend]
         
         # update queue
