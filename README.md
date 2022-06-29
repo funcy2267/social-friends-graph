@@ -4,7 +4,7 @@ Create relationship graph from Facebook friends.
 ### Features
 - No **API keys** are needed.
 - Data can be opened in **Obsidian** to show **graph with connections**.
-- Currently only **Windows** is supported.
+- **Linux** and **Windows** are supported.
 
 # Requirements
 - [Python 3](https://python.org)
@@ -15,12 +15,12 @@ Create relationship graph from Facebook friends.
 Go to project directory.\
 Install required Python modules:
 ```
-pip3 install -r .\requirements.txt
+pip3 install -r requirements.txt
 ```
 Download [Firefox webdriver](https://github.com/mozilla/geckodriver/releases) and extract to project directory.\
 Login to Facebook and save session:
 ```
-py .\login.py
+python3 login.py
 ```
 
 # Usage
@@ -28,7 +28,7 @@ py .\login.py
 ### Example usage
 Get *username*'s friends and their friends:
 ```
-py .\main.py "username" --depth 2
+python3 main.py "username" --depth 2
 ```
 Now you can open output folder `Friends` in Obsidian as a vault and see the [graph view](https://help.obsidian.md/Plugins/Graph+view).
 
@@ -38,7 +38,7 @@ You can blacklist usernames from scanning by creating `blacklist.txt` (usernames
 ### Clear data
 To clear all collected data:
 ```
-rm .\Friends\*.md
+rm Friends/*.md
 ```
 
 ### Help

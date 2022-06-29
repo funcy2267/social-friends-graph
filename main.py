@@ -37,22 +37,22 @@ def extract_friends(username):
         link_joiner = '&'
     else:
         link_joiner = '?'
-    
+
     open_url(BASE_URL+username+link_joiner+'v=friends')
-	
+
     if args.fast == False:
         scroll_down()
-	
+
     raw_html = driver.page_source
     content = BeautifulSoup(raw_html, "html.parser").find('div', {"id": "root"})
     page_a = content.find_all('a', href=True)
-	
+
     friends = {}
     i=0
     for a in page_a:
         href = a['href']
         username = href[1:]
-        
+
         try:
             full_name = page_a[i+1].getText()
         except IndexError:
@@ -60,7 +60,7 @@ def extract_friends(username):
         
         if not (any(x in username for x in ['home.php', '/']) or username in friends):
             friends[username] = full_name
-        
+
         i+=1
     return(friends)
 
@@ -103,8 +103,7 @@ def start_crawling(username, depth):
                 break
 
             # print current progress
-            print('\n')
-            print("Current depth:", i)
+            print('\n'+"Current depth:", i)
             print("Current user:", user, "("+users_db[user]+")")
             print("Crawling:", str(crawled_i)+'/'+str(len(queue)))
 
@@ -118,13 +117,17 @@ def start_crawling(username, depth):
                 users_db[friend] = friends[friend]
                 if friend not in (queue, users_crawled, next_round, blacklist):
                     next_round += [friend]
-        
+
         # update queue
         queue = next_round
         next_round = []
-    
+
     # dump database to json file
     json.dump(users_db, open("db_dump.json", "w", encoding="utf-8"))
+
+    # print summary
+    print('\n'+"Users crawled:", ", ".join(users_crawled))
+    print("Total users crawled:", len(users_crawled))
 
 # import blacklist
 blacklist = []
@@ -151,6 +154,7 @@ for cookie in cookies:
 
 # start crawling
 start_crawling(args.username, args.depth)
+print("Finished.")
 
 # close browser
 driver.close()
