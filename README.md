@@ -3,8 +3,9 @@ Create relationship graph from Facebook friends.
 
 ### Features
 - No **API keys** are needed.
-- Data can be opened in **Obsidian** to show **graph with connections**.
-- **Linux** and **Windows** are supported.
+- Data can be opened in **Obsidian** to show **graph view** of connections between friends.
+- **Linux** and **Windows** OS are supported.
+- Multiple scanning **threads** support.
 
 # Requirements
 - [Python 3](https://python.org)
@@ -30,15 +31,19 @@ Get *username*'s friends and their friends:
 ```
 python3 main.py "username" --depth 2
 ```
-Now you can open output folder `Friends` in Obsidian as a vault and see the [graph view](https://help.obsidian.md/Plugins/Graph+view).
-
-### Blacklist
-You can blacklist usernames from scanning by creating `blacklist.txt` (usernames separated with newlines) or from other file with `--blacklist /path/to/file.txt`.
+Now you can open output folder `Friends` in Obsidian as a vault and see the [graph view](https://help.obsidian.md/Plugins/Graph+view).\
+You can run scanning **multiple times** for different users to make your database even larger.
 
 ### Clear data
-To clear all collected data:
+To delete all collected data from database:
 ```
-rm Friends/*.md
+rm Friends/*
+```
+
+### Clean up
+To clean up database from duplicates:
+```
+python3 clean_db.py
 ```
 
 ### Help

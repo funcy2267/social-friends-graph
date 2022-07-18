@@ -1,10 +1,6 @@
 # generated data
 Friends/
-db_dump.json
 cookies.pkl
 
 # browser driver
 geckodriver*
-
-# other
-blacklist.txt
