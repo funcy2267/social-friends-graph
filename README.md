@@ -29,10 +29,13 @@ python3 login.py
 ### Example usage
 Get *username*'s friends and their friends:
 ```
-python3 main.py "username" --depth 2
+python3 main.py --user "username" --depth 2
 ```
 Now you can open output folder `Friends` in Obsidian as a vault and see the [graph view](https://help.obsidian.md/Plugins/Graph+view).\
 You can run scanning **multiple times** for different users to make your database even larger.
+
+### Limits
+Facebook may [temporarily restrict access](https://www.facebook.com/help/177066345680802) to viewing people's profiles if too many requests are made. To avoid this, you can use `--pause` to wait between scans or partially scan with `--limit` and `--fast`.
 
 ### Clear data
 To delete all collected data from database:

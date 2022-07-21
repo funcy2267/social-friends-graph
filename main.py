@@ -7,10 +7,8 @@ from multiprocessing.pool import ThreadPool
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
-BASE_URL = 'https://m.facebook.com/'
-
 parser = argparse.ArgumentParser(description='Make a connection graph between friends on Facebook.')
-parser.add_argument('username', help='username to start scanning')
+parser.add_argument('--user', '-u', default='profile.php', help='username to start scanning (if not specified, scanning will start from your profile)')
 parser.add_argument('--depth', '-d', type=int, default=1, help='crawling depth (friends of friends)')
 parser.add_argument('--pause', '-p', type=int, default=1, help='seconds to pause before going to next page')
 parser.add_argument('--noscroll', action='store_true', help='do not scroll pages')
@@ -22,6 +20,7 @@ parser.add_argument('--cookies', '-c', default='cookies.pkl', help='use custom c
 parser.add_argument('--threads', '-t', type=int, default=1, help='number of threads')
 args = parser.parse_args()
 
+BASE_URL = 'https://m.facebook.com/'
 db_index_file = args.output+'db_index.txt'
 
 # open url
@@ -41,33 +40,40 @@ def open_url(url, tab, scroll_down=False):
     time.sleep(args.pause)
     return(driver.page_source)
 
-# get full name from username
+# get full name of user
 def get_full_name(username, tab):
     raw_html = open_url(BASE_URL+username, tab)
     content = BeautifulSoup(raw_html, "html.parser").find('h3', {"class": "_6x2x"})
     return(content.prettify().split('\n')[1].strip())
 
-# get list of friends from username
-def get_friends(username, tab):
+def get_link_joiner(username):
+    link_joiners = ['?', '&']
     if 'profile.php?id=' in username:
-        link_joiner = '&'
+        link_joiner = link_joiners[1]
     else:
-        link_joiner = '?'
+        link_joiner = link_joiners[0]
+    return(link_joiner)
 
+# get list of friends from user
+def get_friends(username, tab):
+    link_joiner = get_link_joiner(username)
     raw_html = open_url(BASE_URL+username+link_joiner+'v=friends', tab, scroll_down=not args.noscroll)
     content = BeautifulSoup(raw_html, "html.parser").find('div', {"id": "root"})
     page_a = content.find_all('a', href=True)
 
+    banned_usernames = ['home.php', 'buddylist.php', '']
+    banned_in_usernames = ['/']
     friends = {}
     i=0
     for a in page_a:
         href = a['href']
-        username = href[1:]
+        href_username = href[1:]
+        username = href_username.split(get_link_joiner(href_username))[0]
         try:
             full_name = page_a[i+1].getText()
         except IndexError:
             pass
-        if not (any(x in username for x in ['home.php', '/']) or username in friends):
+        if not any(x for x in [any(x in username for x in banned_in_usernames), any(username == x for x in banned_usernames), username in friends]):
             friends[username] = full_name
         i+=1
     return(friends)
@@ -83,10 +89,12 @@ def save_to_graph(full_name, friends):
     f.close()
 
 def exec_queue(queue, tab):
+    print("In queue ["+str(tab+1)+"]:", queue, '\n')
     result = {}
     queue_index = 1
     for user in queue:
         if args.limit != None and queue_index > args.limit:
+            print("Limit reached.")
             break
         print("Current user:", user, "(thread "+str(tab+1)+"; "+str(queue_index)+'/'+str(len(queue))+")")
         result[user] = get_friends(user, tab)
@@ -173,7 +181,7 @@ for thread in range(args.threads):
 print("All tabs have been opened.")
 
 # start crawling
-start_crawling(args.username, args.depth)
+start_crawling(args.user, args.depth)
 
 # close browser threads
 for driver in drivers:

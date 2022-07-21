@@ -4,12 +4,12 @@ import json
 import time
 from selenium import webdriver
 
-LOGIN_URL = 'https://www.facebook.com/login'
-TFA_URL = 'https://www.facebook.com/checkpoint'
-
 parser = argparse.ArgumentParser(description='Facebook login helper.')
 parser.add_argument('--cookies', '-c', default='cookies.pkl', help='use custom cookies file')
 args = parser.parse_args()
+
+LOGIN_URL = 'https://www.facebook.com/login'
+TFA_URL = 'https://www.facebook.com/checkpoint'
 
 # open login page
 driver = webdriver.Firefox()
