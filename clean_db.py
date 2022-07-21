@@ -8,12 +8,10 @@ args = parser.parse_args()
 files = os.listdir(args.folder)
 
 for f in files:
-    print("Processing:", f)
-    f_path = args.folder+f
-    try:
+    if ".md" in f:
+        print("Processing:", f)
+        f_path = args.folder+f
         up_content = set(open(f_path).readlines())
         up_f = open(f_path, 'w')
         up_f.writelines(up_content)
         up_f.close()
-    except IsADirectoryError:
-        pass
