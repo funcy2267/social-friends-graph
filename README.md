@@ -35,7 +35,7 @@ Now you can open output folder `Friends` in Obsidian as a vault and see the [gra
 You can run scanning **multiple times** for different users to make your database even larger.
 
 ### Limits
-Facebook may [temporarily restrict access](https://www.facebook.com/help/177066345680802) to viewing people's profiles if too many requests are made. To avoid this, you can use `--pause` to wait between scans or partially scan with `--limit` and `--fast`.
+Facebook may [temporarily restrict access](https://www.facebook.com/help/177066345680802) to viewing people's profiles if too many requests are made. To avoid this, you can use `--pause` to wait between scans or partially scan with `--limit`.
 
 ### Clear data
 To delete all collected data from database:

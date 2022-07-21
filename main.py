@@ -12,7 +12,7 @@ parser.add_argument('--user', '-u', default='profile.php', help='username to sta
 parser.add_argument('--depth', '-d', type=int, default=1, help='crawling depth (friends of friends)')
 parser.add_argument('--pause', '-p', type=int, default=1, help='seconds to pause before going to next page')
 parser.add_argument('--noscroll', action='store_true', help='do not scroll pages')
-parser.add_argument('--fast', '-f', action='store_true', help='add to blacklist users that are already in database')
+parser.add_argument('--force', '-f', action='store_true', help='scan already scanned users')
 parser.add_argument('--blacklist', '-b', help='blacklist users (usernames separated with spaces)')
 parser.add_argument('--output', '-o', default='Friends/', help='output folder (followed by slash)')
 parser.add_argument('--limit', '-l', type=int, help='limit users in queue to scan')
@@ -20,8 +20,8 @@ parser.add_argument('--cookies', '-c', default='cookies.pkl', help='use custom c
 parser.add_argument('--threads', '-t', type=int, default=1, help='number of threads')
 args = parser.parse_args()
 
-BASE_URL = 'https://m.facebook.com/'
-db_index_file = args.output+'db_index.txt'
+FB_BASE_URL = 'https://m.facebook.com/'
+users_db_file = args.output+'users_db.json'
 
 # open url
 def open_url(url, tab, scroll_down=False):
@@ -42,7 +42,7 @@ def open_url(url, tab, scroll_down=False):
 
 # get full name of user
 def get_full_name(username, tab):
-    raw_html = open_url(BASE_URL+username, tab)
+    raw_html = open_url(FB_BASE_URL+username, tab)
     content = BeautifulSoup(raw_html, "html.parser").find('h3', {"class": "_6x2x"})
     return(content.prettify().split('\n')[1].strip())
 
@@ -57,7 +57,7 @@ def get_link_joiner(username):
 # get list of friends from user
 def get_friends(username, tab):
     link_joiner = get_link_joiner(username)
-    raw_html = open_url(BASE_URL+username+link_joiner+'v=friends', tab, scroll_down=not args.noscroll)
+    raw_html = open_url(FB_BASE_URL+username+link_joiner+'v=friends', tab, scroll_down=not args.noscroll)
     content = BeautifulSoup(raw_html, "html.parser").find('div', {"id": "root"})
     page_a = content.find_all('a', href=True)
 
@@ -89,27 +89,50 @@ def save_to_graph(full_name, friends):
     f.close()
 
 def exec_queue(queue, tab):
-    print("In queue ["+str(tab+1)+"]:", queue, '\n')
+    display_thread = str(tab+1)
+    print("In queue (thread "+display_thread+"):", queue, '\n')
     result = {}
     queue_index = 1
     for user in queue:
         if args.limit != None and queue_index > args.limit:
             print("Limit reached.")
             break
-        print("Current user:", user, "(thread "+str(tab+1)+"; "+str(queue_index)+'/'+str(len(queue))+")")
+        print("Current user:", user, "(thread "+display_thread+", "+str(queue_index)+'/'+str(len(queue))+")")
         result[user] = get_friends(user, tab)
         queue_index += 1
     return(result)
 
 def start_crawling(username, depth):
-    users_db = {username: get_full_name(username, 0)}
+    if os.path.isfile(users_db_file):
+        users_db = json.load(open(users_db_file, "r", encoding="utf-8"))
+    else:
+        users_db = {"full_names": {}, "friends": {}}
+
+    if username not in users_db["full_names"]:
+        users_db["full_names"][username] = get_full_name(username, 0)
+
     queue = [username]
     next_round = []
     users_scanned = []
 
-    # depth, thread and queue system
-    for current_depth in range(depth):
-        print('\n'+"Current depth:", current_depth+1)
+    # import blacklist
+    blacklist = []
+    if args.blacklist != None:
+        blacklist += args.blacklist.split(" ")
+        print("Blacklisted users:", blacklist)
+
+    # import already scanned users
+    already_scanned = []
+    if not args.force:
+        already_scanned += list(users_db["friends"])
+        print("Already scanned users:", already_scanned)
+
+    # scanning system
+    next_result = {}
+    for depth_index in range(depth):
+        display_depth = str(depth_index+1)
+        print('\n'+"Current depth:", display_depth)
+
         queue_divided = {}
         for thread in range(args.threads):
             queue_divided[thread] = []
@@ -122,47 +145,51 @@ def start_crawling(username, depth):
             thread_pools[thread] = ThreadPool(processes=1)
             thread_results[thread] = thread_pools[thread].apply_async(exec_queue, (queue_divided[thread], thread))
 
-        queue_result = {}
+        queue_result = next_result
         for thread in thread_results:
             queue_result.update(thread_results[thread].get())
 
+        # get existing friends data
+        next_result = {}
+        for user in queue_result:
+            friends_1 = queue_result[user]
+            for friend_1 in friends_1:
+                if friend_1 in already_scanned:
+                    next_result[friend_1] = {}
+                    friends_2 = users_db["friends"][friend_1]
+                    for friend_2 in friends_2:
+                        next_result[friend_1][friend_2] = users_db["full_names"][friend_2]
+
         for user in queue_result:
             friends = queue_result[user]
-            users_db.update(friends)
-            save_to_graph(users_db[user], friends)
-            users_scanned += [user]
+            full_name = users_db["full_names"][user]
+
+            users_db["full_names"].update(friends)
+            if user not in users_db["friends"]:
+                users_db["friends"][user] = list(friends)
+            else:
+                for friend in friends:
+                    if friend not in users_db["friends"][user]:
+                        users_db["friends"][user] += [friend]
+            if user not in users_scanned:
+                users_scanned += [user]
+
+            # save connections between friends
+            save_to_graph(full_name, friends)
 
             for friend in friends:
-                if not any(friend in x for x in [queue, users_scanned, next_round, blacklist]):
+                if not any(friend in x for x in [queue, users_scanned, next_round, blacklist, already_scanned]):
                     next_round += [friend]
 
         queue = next_round
         next_round = []
 
-    # update database index
-    with open(db_index_file, "a") as f:
-        f.write('\n'.join(users_scanned)+'\n')
-        f.close()
-
-    # dump users database to json
-    json.dump(users_db, open(args.output+'last_users_db.json', "w", encoding="utf-8"))
+    # dump users database
+    json.dump(users_db, open(users_db_file, "w", encoding="utf-8"), indent=2)
 
     # print summary
     print('\n'+"Users scanned:", ", ".join(users_scanned))
     print("Total users scanned:", len(users_scanned))
-
-# import blacklist
-blacklist = []
-if args.blacklist != None:
-    blacklist += args.blacklist.split(" ")
-if args.fast == True:
-    if os.path.isfile(db_index_file):
-        with open(db_index_file, "r") as f:
-            for user in f.read().split('\n'):
-                if user != '':
-                    blacklist += [user]
-if blacklist != []:
-    print("Blacklisted users:", blacklist)
 
 # create output folder if not exists
 if not os.path.isdir(args.output):
