@@ -85,10 +85,12 @@ def save_to_graph(users_db):
     friends = users_db["friends"]
 
     for user in friends:
-        f = open(args.output+full_names[user]+".md", "a", encoding="utf-8")
-        for friend in friends[user]:
-            f.write('[['+full_names[friend]+']]'+'\n')
-        f.close()
+        user_friends = friends[user]
+        if user_friends != []:
+            f = open(args.output+full_names[user]+".md", "a", encoding="utf-8")
+            for friend in user_friends:
+                f.write('[['+full_names[friend]+']]'+'\n')
+            f.close()
 
 def exec_queue(queue, tab):
     display_thread = str(tab+1)
