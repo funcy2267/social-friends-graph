@@ -63,42 +63,49 @@ def get_friends(username, tab):
 
     banned_usernames = ['home.php', 'buddylist.php', '']
     banned_in_usernames = ['/']
-    friends = {}
+    friends = {"full_names": {}, "friends": {username: []}}
     i=0
     for a in page_a:
         href = a['href']
         href_username = href[1:]
-        username = href_username.split(get_link_joiner(href_username))[0]
+        friend_username = href_username.split(get_link_joiner(href_username))[0]
         try:
-            full_name = page_a[i+1].getText()
+            friend_full_name = page_a[i+1].getText()
         except IndexError:
             pass
-        if not any(x for x in [any(x in username for x in banned_in_usernames), any(username == x for x in banned_usernames), username in friends]):
-            friends[username] = full_name
+        if not any(x for x in [any(x in friend_username for x in banned_in_usernames), any(friend_username == x for x in banned_usernames), friend_username in friends["friends"][username]]):
+            friends["friends"][username] += [friend_username]
+            friends["full_names"][friend_username] = friend_full_name
         i+=1
     return(friends)
 
 # save friends data in proper format
-def save_to_graph(full_name, friends):
-    f = open(args.output+full_name+".md", "a", encoding="utf-8")
-    for friend in friends:
-        try:
-            f.write('[['+friends[friend]+']]'+'\n')
-        except UnicodeEncodeError:
-            pass
-    f.close()
+def save_to_graph(users_db):
+    full_names = users_db["full_names"]
+    friends = users_db["friends"]
+
+    for user in friends:
+        f = open(args.output+full_names[user]+".md", "a", encoding="utf-8")
+        for friend in friends[user]:
+            f.write('[['+full_names[friend]+']]'+'\n')
+        f.close()
 
 def exec_queue(queue, tab):
     display_thread = str(tab+1)
     print("In queue (thread "+display_thread+"):", queue, '\n')
-    result = {}
+
+    result = {"full_names": {}, "friends": {}}
     queue_index = 1
     for user in queue:
         if args.limit != None and queue_index > args.limit:
             print("Limit reached.")
             break
+
         print("Current user:", user, "(thread "+display_thread+", "+str(queue_index)+'/'+str(len(queue))+")")
-        result[user] = get_friends(user, tab)
+        result_get = get_friends(user, tab)
+        for x in ["friends", "full_names"]:
+            result[x].update(result_get[x])
+
         queue_index += 1
     return(result)
 
@@ -110,10 +117,6 @@ def start_crawling(username, depth):
 
     if username not in users_db["full_names"]:
         users_db["full_names"][username] = get_full_name(username, 0)
-
-    queue = [username]
-    next_round = []
-    users_scanned = []
 
     # import blacklist
     blacklist = []
@@ -128,63 +131,68 @@ def start_crawling(username, depth):
         print("Already scanned users:", already_scanned)
 
     # scanning system
-    next_result = {}
+    queue = [username]
+    next_round = []
+    users_scanned = []
+    next_result = {"full_names": {}, "friends": {}}
     for depth_index in range(depth):
         display_depth = str(depth_index+1)
         print('\n'+"Current depth:", display_depth)
 
+        # divide queue
         queue_divided = {}
         for thread in range(args.threads):
             queue_divided[thread] = []
             for i in range(thread, len(queue), args.threads):
                 queue_divided[thread] += [queue[i]]
 
+        # start threads
         thread_pools = {}
         thread_results = {}
         for thread in queue_divided:
             thread_pools[thread] = ThreadPool(processes=1)
             thread_results[thread] = thread_pools[thread].apply_async(exec_queue, (queue_divided[thread], thread))
 
+        # get results from threads
         queue_result = next_result
+        next_result = {"full_names": {}, "friends": {}}
         for thread in thread_results:
-            queue_result.update(thread_results[thread].get())
+            thread_result = thread_results[thread].get()
+            for x in ["friends", "full_names"]:
+                queue_result[x].update(thread_result[x])
 
-        # get existing friends data
-        next_result = {}
-        for user in queue_result:
-            friends_1 = queue_result[user]
-            for friend_1 in friends_1:
-                if friend_1 in already_scanned:
-                    next_result[friend_1] = {}
-                    friends_2 = users_db["friends"][friend_1]
-                    for friend_2 in friends_2:
-                        next_result[friend_1][friend_2] = users_db["full_names"][friend_2]
+        # update users database
+        users_db["full_names"].update(queue_result["full_names"])
+        for user in queue_result["friends"]:
+            friends = queue_result["friends"][user]
 
-        for user in queue_result:
-            friends = queue_result[user]
-            full_name = users_db["full_names"][user]
-
-            users_db["full_names"].update(friends)
-            if user not in users_db["friends"]:
-                users_db["friends"][user] = list(friends)
-            else:
-                for friend in friends:
-                    if friend not in users_db["friends"][user]:
-                        users_db["friends"][user] += [friend]
             if user not in users_scanned:
                 users_scanned += [user]
 
-            # save connections between friends
-            save_to_graph(full_name, friends)
+            if user == username and user in already_scanned:
+                for friend in users_db["friends"][user]:
+                    if friend not in queue_result["friends"][user]:
+                        queue_result["friends"][user] += [friend]
 
+            if user not in users_db["friends"]:
+                users_db["friends"][user] = []
             for friend in friends:
+                if friend not in users_db["friends"][user]:
+                    users_db["friends"][user] += [friend]
                 if not any(friend in x for x in [queue, users_scanned, next_round, blacklist, already_scanned]):
                     next_round += [friend]
+                elif friend in already_scanned:
+                    next_result["friends"][friend] = users_db["friends"][friend]
 
         queue = next_round
         next_round = []
 
+    # save connections between friends
+    print('\n'+"Generating graph...")
+    save_to_graph(users_db)
+
     # dump users database
+    print("Saving database...")
     json.dump(users_db, open(users_db_file, "w", encoding="utf-8"), indent=2)
 
     # print summary
