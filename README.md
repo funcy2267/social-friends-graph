@@ -35,17 +35,17 @@ Generate graph:
 ```
 python3 database.py --generate
 ```
+
 Now you can open output folder `Friends` in Obsidian as a vault and see the graph of connections.\
 You can run scanning **multiple times** for different users to make your database even larger.
 
-### Help
-Check more info about usage with `--help`.
+Use `--help` to check more info about usage.
 
 ### Database
-To see available options for database:
+To see available options for managing your database:
 ```
 python3 database.py --help
 ```
 
-### Limits
-Facebook may [temporarily restrict access](https://www.facebook.com/help/177066345680802) to viewing people's profiles if too many requests are made. To avoid this, you can use `--pause` to wait between scans or partially scan with `--limit`.
+# Limits
+Facebook may [temporarily restrict access](https://www.facebook.com/help/177066345680802) to viewing people's profiles if too many requests are made. To avoid this, you can use `--pause` to wait between scans, use `--noscroll` or partially scan with `--limit`.
