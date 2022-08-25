@@ -12,7 +12,7 @@ parser.add_argument('--user', '-u', default='profile.php', help='username to sta
 parser.add_argument('--depth', '-d', type=int, default=1, help='crawling depth (friends of friends)')
 parser.add_argument('--pause', '-p', type=int, default=1, help='seconds to pause before going to next page')
 parser.add_argument('--noscroll', action='store_true', help='do not scroll pages')
-parser.add_argument('--force', '-f', action='store_true', help='scan already scanned users')
+parser.add_argument('--force', '-f', action='store_true', help='rescan already scanned users')
 parser.add_argument('--blacklist', '-b', help='blacklist users (usernames separated with spaces)')
 parser.add_argument('--output', '-o', default='Friends/', help='output folder (followed by slash)')
 parser.add_argument('--limit', '-l', type=int, help='limit users in queue to scan')
@@ -78,19 +78,6 @@ def get_friends(username, tab):
             friends["full_names"][friend_username] = friend_full_name
         i+=1
     return(friends)
-
-# save friends data in proper format
-def save_to_graph(users_db):
-    full_names = users_db["full_names"]
-    friends = users_db["friends"]
-
-    for user in friends:
-        user_friends = friends[user]
-        if user_friends != []:
-            f = open(args.output+full_names[user]+".md", "a", encoding="utf-8")
-            for friend in user_friends:
-                f.write('[['+full_names[friend]+']]'+'\n')
-            f.close()
 
 def exec_queue(queue, tab):
     display_thread = str(tab+1)
@@ -188,10 +175,6 @@ def start_crawling(username, depth):
 
         queue = next_round
         next_round = []
-
-    # save connections between friends
-    print('\n'+"Generating graph...")
-    save_to_graph(users_db)
 
     # dump users database
     print("Saving database...")

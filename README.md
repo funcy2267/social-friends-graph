@@ -3,7 +3,7 @@ Create relationship graph from Facebook friends.
 
 ### Features
 - No **API keys** are needed.
-- Data can be opened in **Obsidian** to show **graph view** of connections between friends.
+- Data can be opened in **Obsidian** to show [graph view](https://help.obsidian.md/Plugins/Graph+view) of connections between friends.
 - **Linux** and **Windows** OS are supported.
 - Multiple scanning **threads** support.
 
@@ -31,23 +31,21 @@ Get *username*'s friends and their friends:
 ```
 python3 main.py --user "username" --depth 2
 ```
-Now you can open output folder `Friends` in Obsidian as a vault and see the [graph view](https://help.obsidian.md/Plugins/Graph+view).\
+Generate graph:
+```
+python3 database.py --generate
+```
+Now you can open output folder `Friends` in Obsidian as a vault and see the graph of connections.\
 You can run scanning **multiple times** for different users to make your database even larger.
-
-### Limits
-Facebook may [temporarily restrict access](https://www.facebook.com/help/177066345680802) to viewing people's profiles if too many requests are made. To avoid this, you can use `--pause` to wait between scans or partially scan with `--limit`.
-
-### Clear data
-To delete all collected data from database:
-```
-rm Friends/*
-```
-
-### Clean up
-To clean up database from duplicates:
-```
-python3 clean_db.py
-```
 
 ### Help
 Check more info about usage with `--help`.
+
+### Database
+To see available options for database:
+```
+python3 database.py --help
+```
+
+### Limits
+Facebook may [temporarily restrict access](https://www.facebook.com/help/177066345680802) to viewing people's profiles if too many requests are made. To avoid this, you can use `--pause` to wait between scans or partially scan with `--limit`.
