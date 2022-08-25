@@ -9,8 +9,8 @@ parser.add_argument('--clean', '-c', action='store_true', help='cleanup database
 parser.add_argument('--merge', '-m', help='destination database to merge')
 args = parser.parse_args()
 
-users_db_file = 'users_db.json'
-users_db = json.load(open(args.database+users_db_file, "r", encoding="utf-8"))
+users_db_file_name = 'users_db.json'
+users_db = json.load(open(args.database+users_db_file_name, "r", encoding="utf-8"))
 
 if args.generate:
     full_names = users_db["full_names"]
@@ -40,7 +40,7 @@ if args.clean:
     print("Cleaned database: "+args.database)
 
 if args.merge:
-    f_dst = args.merge+users_db_file
+    f_dst = args.merge+users_db_file_name
     db_src = users_db
     db_dst = json.load(open(f_dst, "r", encoding="utf-8"))
 
