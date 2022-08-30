@@ -5,6 +5,7 @@ import json
 parser = argparse.ArgumentParser(description='Database management tool.')
 parser.add_argument('--database', '-d', default='Friends/', help='database folder (followed by slash)')
 parser.add_argument('--generate', '-g', action='store_true', help='generate graph from database')
+parser.add_argument('--usernames', '-u', action='store_true', help='use usernames for generating graph')
 parser.add_argument('--clean', '-c', action='store_true', help='cleanup database')
 parser.add_argument('--merge', '-m', help='destination database to merge')
 args = parser.parse_args()
@@ -20,9 +21,17 @@ if args.generate:
         print("Processing:", user)
         user_friends = friends[user]
         if user_friends != []:
-            f = open(args.database+full_names[user]+".md", "a", encoding="utf-8")
+            if not args.usernames:
+                user_name = full_names[user]
+            else:
+                user_name = user
+            f = open(args.database+user_name+".md", "a", encoding="utf-8")
             for friend in user_friends:
-                f.write('[['+full_names[friend]+']]'+'\n')
+                if not args.usernames:
+                    friend_name = full_names[friend]
+                else:
+                    friend_name = friend
+                f.write('[['+friend_name+']]'+'\n')
             f.close()
     print("Generated graph: "+args.database)
 
