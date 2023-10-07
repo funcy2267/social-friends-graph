@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 
 FB_BASE_URL = 'https://m.facebook.com/'
+USER_AGENT_STRING = "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; Touch; rv:11.0) like Gecko"
 
 # open url
 def open_url(url, tab, scroll_down=False):
@@ -64,9 +65,11 @@ def get_friends(username, tab):
 def open_tabs(threads, cookies_file):
     global drivers
     drivers = []
+    fprofile = webdriver.FirefoxProfile()
+    fprofile.set_preference("general.useragent.override", USER_AGENT_STRING)
     for thread in range(threads):
         print("Opening tab", str(thread+1)+'/'+str(threads)+"...")
-        drivers += [webdriver.Firefox()]
+        drivers += [webdriver.Firefox(fprofile)]
         open_url('https://www.facebook.com', thread)
         cookies = pickle.load(open(cookies_file, "rb"))
         for cookie in cookies:
