@@ -62,4 +62,5 @@ if args.generate:
 if args.merge:
     users_db_src = shared.db_load(args.merge)
     users_db = shared.deep_update(users_db, users_db_src)
-    shared.db_dump(users_db, args.database)
+    shared.db_dump(args.database, users_db)
+    print(f'Merged database {args.merge} with {args.database}.')
