@@ -170,7 +170,7 @@ service_file_overwrite = False
 if service_file in os.listdir(db_folder):
     with open(db_folder+service_file, 'r') as file:
         if file.read() != args.service:
-            if input("Caution! You selected different platform than database has. It might cause mismatch and inconsistency in database. Are you sure you want to continue? [y/n]: ") == 'y':
+            if input("Caution! You selected different service than database has. It might cause mismatch and inconsistency in database. Are you sure you want to continue? [y/n]: ") == 'y':
                 service_file_overwrite = True
             else:
                 exit()

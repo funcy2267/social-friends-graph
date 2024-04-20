@@ -1,6 +1,7 @@
 import os
 import argparse
 import re
+import shutil
 
 from lib import shared
 
@@ -60,7 +61,16 @@ if args.generate:
     print("Generated graph:", args.database)
 
 if args.merge:
+    db_folder_merge = shared.user_data_folder+args.merge+'/'
+    if open(db_folder_merge+'service.txt', 'r').read() != open(db_folder+'service.txt', 'r').read():
+        if input("Caution! You are trying to merge databases with different services. It might cause mismatch and inconsistency in database. Are you sure you want to continue? [y/n]: ") == 'y':
+            shutil.copy(db_folder_merge+'service.txt', db_folder+'service.txt')
+        else:
+            exit()
     users_db_src = shared.db_load(args.merge)
     users_db = shared.deep_update(users_db, users_db_src)
     shared.db_dump(args.database, users_db)
-    print(f'Merged database {args.merge} with {args.database}.')
+    for file in os.listdir(db_folder_merge+'images/'):
+        if file.endswith('.png'):
+            shutil.copy(db_folder_merge+'images/'+file, db_folder+'images/')
+    print(f'Merged database {args.merge} to {args.database}.')
