@@ -41,7 +41,7 @@ Generate graph:
 python3 database.py --generate
 ```
 
-Now you can open output folder `Friends/` in Obsidian as a vault and see the graph of connections.\
+Now you can open database folder `user_data/your_database/` in Obsidian as a vault and see the graph of connections.\
 You can run scanning **multiple times** for different users to make your database even larger.
 
 Use `--help` to check more info about usage of available commands.
