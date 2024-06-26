@@ -1,8 +1,8 @@
 __pycache__/
 
-# generated data
-Friends/
-cookies.pkl
+# user data
+user_data/
+*.pkl
 
 # browser driver
 geckodriver*
