@@ -1,21 +1,21 @@
 import time
 import copy
+import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 from lib import shared
 
+driver_helper = json.load(open("lib/driver_helper.json", "r", encoding="utf-8"))
+
 drivers = []
 
 class Shared:
-    def open_url(url, tab, max_scrolls=0):
+    def open_url(url, tab):
         driver = drivers[tab]
         driver.get(url)
         time.sleep(args_pause)
-
-        if max_scrolls != 0:
-            Shared.scroll_down_list(tab, max_scrolls)
 
         return driver.page_source
 
@@ -30,12 +30,14 @@ class Shared:
             shared.cookies_load(drivers[thread], cookies_file)
 
     def scroll_down_list(tab, max_scrolls):
+        if max_scrolls == 0:
+            return
         driver = drivers[tab]
         match args_service:
             case "facebook":
                 scroll_down_script = 'window.scrollTo(0, document.body.scrollHeight);'
             case "instagram":
-                scroll_down_script = 'var container = document.getElementsByClassName("_aano")[0]; container.scrollTop = container.scrollHeight;'
+                scroll_down_script = 'var container = document.getElementsByClassName("{friends_list}")[0]; container.scrollTop = container.scrollHeight;'.format(friends_list = driver_helper["instagram"]["friends_list"])
         scrolls = 0
         src1 = 1
         src2 = 2
@@ -58,7 +60,7 @@ class Facebook:
         try:
             if page_src == None:
                 raw_html = Shared.open_url(BASE_URL+username, tab)
-                content = BeautifulSoup(raw_html, "html.parser").find('h3', {"class": "_6x2x"})
+                content = BeautifulSoup(raw_html, "html.parser").find('h3', {"class": driver_helper["facebook"]["full_name_content"]})
                 full_name = content.prettify().split('\n')[1].strip()
             else:
                 full_name = page_src[0][page_src[1]].getText()
@@ -72,7 +74,7 @@ class Facebook:
         try:
             if page_src == None:
                 Shared.open_url(BASE_URL+username, tab)
-                pfp = drivers[tab].find_element(By.CLASS_NAME, "profpic")
+                pfp = drivers[tab].find_element(By.CLASS_NAME, driver_helper["facebook"]["profile_pic"])
             else:
                 pfp = page_src[0][page_src[1]]
             pfp.screenshot(db_folder+'images/'+username+'.png')
@@ -88,13 +90,15 @@ class Facebook:
     # get list of friends from user
     def get_friends(username, tab):
         link_joiner = Facebook.get_link_joiner(username)
-        raw_html = Shared.open_url(BASE_URL+username+link_joiner+'v=friends', tab, max_scrolls=args_max_scrolls)
-        content = BeautifulSoup(raw_html, "html.parser").find('div', {"id": "root"})
-        page_div = content.find_all('div', {"class": "_84l2"})
+        Shared.open_url(BASE_URL+username+link_joiner+'v=friends', tab)
+        Shared.scroll_down_list(tab, args_max_scrolls)
+        raw_html = drivers[tab].page_source
+        content = BeautifulSoup(raw_html, "html.parser").find('div', {"id": driver_helper["facebook"]["friends_list_content"]})
+        page_div = content.find_all('div', {"class": driver_helper["facebook"]["friends_list_page_div"]})
         page_a = []
         for div in page_div:
             page_a += [div.find('a', href=True)]
-        page_i = drivers[tab].find_elements(By.CLASS_NAME, "profpic")
+        page_i = drivers[tab].find_elements(By.CLASS_NAME, driver_helper["facebook"]["profile_pic"])
 
         banned_usernames = ['home.php', 'buddylist.php', '']
         banned_in_usernames = ['/']
@@ -121,10 +125,10 @@ class Instagram:
         try:
             if page_src == None:
                 raw_html = Shared.open_url(BASE_URL+username, tab)
-                content = BeautifulSoup(raw_html, "html.parser").find('span', {"class": "x1lliihq x1plvlek xryxfnj x1n2onr6 x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xvs91rp x1s688f x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"})
+                content = BeautifulSoup(raw_html, "html.parser").find('span', {"class": driver_helper["instagram"]["full_name_content_1"]})
                 full_name = content.prettify().split('\n')[1].strip()
             else:
-                full_name = page_src[0][page_src[1]].find('span', {"class": "x1lliihq x193iq5w x6ikm8r x10wlt62 xlyipyv xuxw1ft"}).get_text()
+                full_name = page_src[0][page_src[1]].find('span', {"class": driver_helper["instagram"]["full_name_content_2"]}).get_text()
         except:
             full_name = ''
         if full_name == '':
@@ -135,7 +139,7 @@ class Instagram:
         try:
             if page_src == None:
                 Shared.open_url(BASE_URL+username, tab)
-                pfp = drivers[tab].find_elements(By.CSS_SELECTOR, ".xpdipgo.x972fbf.xcfux6l.x1qhh985.xm0m39n.xk390pu.x5yr21d.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xl1xv1r.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x11njtxf.xh8yej3")[1]
+                pfp = drivers[tab].find_elements(By.CSS_SELECTOR, driver_helper["instagram"]["profile_pic"])[1]
             else:
                 pfp = page_src[0][page_src[1]]
             pfp.screenshot(db_folder+'images/'+username+'.png')
@@ -144,12 +148,21 @@ class Instagram:
 
     # get list of friends from user
     def get_friends(username, source, tab):
-        raw_html = Shared.open_url(BASE_URL+username+'/'+source, tab, max_scrolls=args_max_scrolls)
-        content = BeautifulSoup(raw_html, "html.parser").find('div', {"class": "_aano"})
+        Shared.open_url(BASE_URL+username, tab)
+        match source:
+            case "following":
+                source_button = 1
+            case "followers":
+                source_button = 0
+        drivers[tab].find_elements(By.CSS_SELECTOR, driver_helper["instagram"]["show_list"])[source_button].click()
+        time.sleep(args_pause)
+        Shared.scroll_down_list(tab, args_max_scrolls)
+        raw_html = drivers[tab].page_source
+        content = BeautifulSoup(raw_html, "html.parser").find('div', {"class": driver_helper["instagram"]["friends_list"]})
         page_div = content.find('div')
-        page_span = page_div.find_all('span', {"class": "_ap3a _aaco _aacw _aacx _aad7 _aade"})
-        page_span2 = page_div.find_all('span', {"class": "x1lliihq x1plvlek xryxfnj x1n2onr6 x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xvs91rp xo1l8bm x1roi4f4 x10wh9bi x1wdrske x8viiok x18hxmgj"})
-        page_img = drivers[tab].find_elements(By.CLASS_NAME, "_aarf")
+        page_span = page_div.find_all('span', {"class": driver_helper["instagram"]["friends_list_page_span_1"]})
+        page_span2 = page_div.find_all('span', {"class": driver_helper["instagram"]["friends_list_page_span_2"]})
+        page_img = drivers[tab].find_elements(By.CLASS_NAME, driver_helper["instagram"]["page_img"])
 
         friends = copy.deepcopy(shared.users_db_structure)
         friends["users"] = {username: {source: []}}

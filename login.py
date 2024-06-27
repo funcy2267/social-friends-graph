@@ -38,7 +38,7 @@ else:
     shared.cookies_load(driver, args.cookies)
     driver.get(DEFAULT_URL)
     input("Press enter to close browser window.")
-    if input("Update cookies file? [y/n]") =="y":
+    if input("Update cookies file? [y/n]: ") =="y":
         shared.cookies_dump(driver, args.cookies)
         print("Cookies updated.")
 driver.quit()
