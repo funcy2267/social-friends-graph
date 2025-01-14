@@ -1,0 +1,35 @@
+{
+    "driver": {
+        "full_name": {
+            "description": "User display name",
+            "location": "example.user"
+        },
+        "profile_pic": {
+            "description": "User profile picture",
+            "location": "example.user"
+        },
+        "show_list": {
+            "description": "Show list of followed users",
+            "location": "example.user"
+        },
+        "friend_handle": {
+            "description": "Friend handle",
+            "location": "example.user"
+        },
+        "friend_display_name": {
+            "description": "Friend display name",
+            "location": "example.user",
+            "xpath_overwrite": ".."
+        },
+        "friend_pfp": {
+            "description": "Friend profile picture",
+            "location": "example.user"
+        }
+    },
+    "urls": {
+        "DEFAULT_URL": "https://www.instagram.com/",
+        "BASE_URL": "https://www.instagram.com/",
+        "LOGIN_URL": "https://www.instagram.com/accounts/login",
+        "LOGIN_END_URL": "https://www.instagram.com"
+    }
+}

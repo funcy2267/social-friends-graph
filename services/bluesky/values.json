@@ -1,0 +1,5 @@
+{
+    "urls": {
+        "BASE_URL": "https://public.api.bsky.app/"
+    }
+}

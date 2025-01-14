@@ -1,14 +1,17 @@
 import json
 import copy
-import pickle
-from urllib.parse import urlparse, urlunparse
+import re
 
 user_data_folder = 'user_data/'
+calibrated_driver_values_file = 'calibrated_driver_values.json'
+databases_folder = user_data_folder+'Databases/'
+db_images_folder = 'images/'
+sessions_folder = user_data_folder+'Sessions/'
 users_db_file = 'users_db.json'
-users_db_structure = {"full_names": {}, "users": {}}
+users_db_structure = {"display_names": {}, "users": {}}
 
+# Recursively merge or update dict-like objects with lists.
 def deep_update(d, u):
-    # Recursively merge or update dict-like objects with lists.
     for k, v in u.items():
         if isinstance(v, dict) and k in d:
             deep_update(d[k], v)
@@ -22,42 +25,22 @@ def deep_update(d, u):
             d[k] = v
     return d
 
-def split_list(l, x):
-    if x != None:
-        if l != []:
-            return [l[i:i+x] for i in range(0, len(l), x)]
-        else:
-            return [l]
-    else:
-        return [l]
+def format_file_name(filename):
+    return re.sub(r'[<>:"/\\|?*]', '', filename)
 
-def clean_url(url):
-    parsed_url = urlparse(url)
-    cleaned_url = urlunparse((parsed_url.scheme, parsed_url.netloc, parsed_url.path, '', '', ''))
-    while cleaned_url.endswith('/'):
-        cleaned_url = cleaned_url[:-1]
-    return cleaned_url
+class Database:
+    def format_graph(users_db):
+        merge_db = copy.deepcopy(users_db_structure)
+        relations = {"friends": "friends", "following": "followers", "followers": "following"}
+        for user in users_db["users"]:
+            for k, v in relations.items():
+                if k in users_db["users"][user]:
+                    for friend in users_db["users"][user][k]:
+                        merge_db = deep_update(merge_db, {"users": {friend: {v: [user]}}})
+        return deep_update(users_db, merge_db)
 
-def db_dump(database, users_db):
-    json.dump(users_db, open(user_data_folder+database+'/'+users_db_file, "w", encoding="utf-8"), indent=2)
+    def dump(database, users_db):
+        json.dump(users_db, open(databases_folder+database+'/'+users_db_file, "w", encoding="utf-8"), indent=2)
 
-def db_load(database):
-    return json.load(open(user_data_folder+database+'/'+users_db_file, "r", encoding="utf-8"))
-
-def cookies_dump(driver, cookies_file):
-    pickle.dump(driver.get_cookies(), open(cookies_file, "wb"))
-
-def cookies_load(driver, cookies_file):
-    cookies = pickle.load(open(cookies_file, "rb"))
-    for cookie in cookies:
-        driver.add_cookie(cookie)
-
-def db_format_graph(users_db):
-    merge_db = copy.deepcopy(users_db_structure)
-    relations = {"friends": "friends", "following": "followers", "followers": "following"}
-    for user in users_db["users"]:
-        for k, v in relations.items():
-            if k in users_db["users"][user]:
-                for friend in users_db["users"][user][k]:
-                    merge_db = deep_update(merge_db, {"users": {friend: {v: [user]}}})
-    return deep_update(users_db, merge_db)
+    def load(database):
+        return json.load(open(databases_folder+database+'/'+users_db_file, "r", encoding="utf-8"))

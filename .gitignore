@@ -2,7 +2,6 @@ __pycache__/
 
 # user data
 user_data/
-*.pkl
 
 # browser driver
 geckodriver*

@@ -5,75 +5,60 @@ from multiprocessing.pool import ThreadPool
 
 from lib import shared, driver
 
-parser = argparse.ArgumentParser(description='Make a connection graph between friends.')
+import services.handler
+
+parser = argparse.ArgumentParser(description='Connection scanning tool.')
 parser.add_argument('users', help='usernames to scan (separated with spaces)')
-parser.add_argument('service', choices=['facebook', 'instagram'], help='select one of available services')
-parser.add_argument('--database', '-d', default='Friends', help='database name')
-parser.add_argument('--source', '-s', choices=['following', 'followers', 'all'], default='following', help='select one of available options')
+parser.add_argument('service', choices=services.handler.AVAILABLE_SERVICES, help='select one of available services')
+parser.add_argument('--session', '-s', help='session name')
+parser.add_argument('--database', '-d', help='database name')
+parser.add_argument('--source', '-S', choices=['following', 'followers', 'all'], default='following', help='select one of available options')
 parser.add_argument('--depth', '-D', type=int, default=1, help='crawling depth (friends of friends)')
 parser.add_argument('--pause', '-p', type=int, default=3, help='seconds to pause after loading a page')
 parser.add_argument('--max-scrolls', '-m', type=int, help='maximum number of scrolls down per page')
+parser.add_argument('--manual', '-M', action='store_true', help='in manual mode you have to navigate between pages by yourself')
 parser.add_argument('--force', '-f', action='store_true', help='rescan already scanned users')
 parser.add_argument('--nopfp', action='store_true', help='do not save profile pictures in database')
-parser.add_argument('--blacklist', '-b', help='blacklist usernames')
+parser.add_argument('--blacklist', '-b', help='blacklist usernames to avoid scanning')
 parser.add_argument('--limit', '-l', type=int, help='limit number of users to scan')
-parser.add_argument('--cookies', '-c', default='cookies.pkl', help='use custom cookies file for session')
 parser.add_argument('--threads', '-t', type=int, default=1, help='number of threads for scanning')
 parser.add_argument('--autosave', '-a', type=int, help='save results every given amount of users scanned')
 args = parser.parse_args()
 
-users_scanned = []
+def split_list(l, x):
+    if x != None:
+        if l != []:
+            return [l[i:i+x] for i in range(0, len(l), x)]
+        else:
+            return [l]
+    else:
+        return [l]
 
+# execute queue for thread
 def exec_queue(queue, tab):
     display_thread = str(tab+1)
     print(f'In queue (thread {display_thread}): {queue}\n')
-
     result = copy.deepcopy(shared.users_db_structure)
     i = 0
     for user in queue:
         print(f'Current user: {user} ({str(i+1)}/{str(len(queue))}, thread {display_thread})')
-
-        # handle different services
-        try:
-            match args.service:
-                case "facebook":
-                    result_get = driver.Facebook.get_friends(user, tab)
-                case "instagram":
-                    match args.source:
-                        case "following":
-                            result_get = driver.Instagram.get_friends(user, "following", tab)
-                        case "followers":
-                            result_get = driver.Instagram.get_friends(user, "followers", tab)
-                        case "all":
-                            result_get = driver.Instagram.get_friends(user, "following", tab)
-                            result_get = shared.deep_update(result_get, driver.Instagram.get_friends(user, "followers", tab))
-        except:
-            print(f'Error while scanning user: {user}')
-            result_get = {}
-
+        result_get = services.handler.get_friends(user, tab, args.source)
         result = shared.deep_update(result, result_get)
         i += 1
     return result
 
 def start_crawling(username, depth):
+    # import database
     try:
-        users_db = shared.db_load(args.database)
+        users_db = shared.Database.load(args.database)
     except:
         users_db = copy.deepcopy(shared.users_db_structure)
 
-    if username not in users_db["full_names"]:
-        match args.service:
-            case "facebook":
-                username_full_name = driver.Facebook.get_full_name(username, tab=0)
-            case "instagram":
-                username_full_name = driver.Instagram.get_full_name(username, tab=0)
-        users_db["full_names"][username] = username_full_name
-    if not args.nopfp and username+'.png' not in os.listdir(db_folder+"images/"):
-        match args.service:
-            case "facebook":
-                username_full_name = driver.Facebook.save_pfp(username, tab=0)
-            case "instagram":
-                username_full_name = driver.Instagram.save_pfp(username, tab=0)
+    # save data about user
+    if username not in users_db["display_names"] or args.force==True:
+        users_db["display_names"][username] = services.handler.get_display_name(username, 0)
+    if not args.nopfp and (username+'.png' not in os.listdir(db_folder+shared.db_images_folder) or args.force==True):
+        services.handler.save_pfp(username, 0)
 
     # import blacklist
     blacklist = []
@@ -100,8 +85,7 @@ def start_crawling(username, depth):
     global users_scanned
     for depth_index in range(depth):
         print(f'\nCurrent depth: {depth_index+1}')
-
-        for queue_chunk in shared.split_list(queue, args.autosave):
+        for queue_chunk in split_list(queue, args.autosave):
             # divide queue
             queue_divided = {}
             for thread in range(args.threads):
@@ -124,9 +108,9 @@ def start_crawling(username, depth):
                 queue_result = shared.deep_update(queue_result, thread_result)
 
             # fix empty full names
-            for user in queue_result["full_names"]:
-                if queue_result["full_names"][user] == '':
-                    queue_result["full_names"][user] = user
+            for user in queue_result["display_names"]:
+                if queue_result["display_names"][user] == '':
+                    queue_result["display_names"][user] = user
 
             # update users database
             users_db = shared.deep_update(users_db, queue_result)
@@ -141,25 +125,26 @@ def start_crawling(username, depth):
                 if user not in users_scanned:
                     users_scanned += [user]
 
+            # autosave
             if args.autosave and queue_chunk != []:
-                shared.db_dump(args.database, users_db)
+                shared.Database.dump(args.database, users_db)
                 print("Database saved. (Autosave)")
 
         queue = next_round
         next_round = []
 
     if not args.autosave:
-        shared.db_dump(args.database, users_db)
+        shared.Database.dump(args.database, users_db)
         print("Database saved.")
 
     # print summary
     print(f'\nUsers scanned: {users_scanned} | {len(users_scanned)} users')
 
 print(f'Using {args.database} as database.')
-db_folder = shared.user_data_folder+args.database+'/'
+db_folder = shared.databases_folder+args.database+'/'
 
 # create required folders if not exists
-required_folders = [shared.user_data_folder, db_folder, db_folder+"images/"]
+required_folders = [db_folder, db_folder+shared.db_images_folder]
 for folder in required_folders:
     if not os.path.isdir(folder):
         os.mkdir(folder)
@@ -181,35 +166,32 @@ if service_file_overwrite:
         file.write(args.service)
         file.close()
 
-# import arguments to driver
-driver.db_folder = db_folder
-driver.args_pause = args.pause
-driver.args_max_scrolls = args.max_scrolls
-driver.args_service = args.service
-driver.args_nopfp = args.nopfp
+# prepare scanning
+values = services.handler.set_service(args.service)
+if args.session:
+    print(f'Using {args.session} as session.')
+    print("Launching Firefox...")
+    driver.open_tabs(args.threads, values["urls"]["DEFAULT_URL"], session=args.session)
+    print("All tabs have been opened.")
 
-# prepare browser threads
-print("Launching Firefox...")
-match args.service:
-    case "facebook":
-        driver.USER_AGENT_STRING = "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; Touch; rv:11.0) like Gecko"
-        driver.DEFAULT_URL = 'https://www.facebook.com/'
-        driver.BASE_URL = 'https://m.facebook.com/'
-    case "instagram":
-        driver.USER_AGENT_STRING = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0"
-        driver.DEFAULT_URL = 'https://www.instagram.com/'
-        driver.BASE_URL = 'https://www.instagram.com/'
-driver.Shared.open_tabs(args.threads, args.cookies)
-print("All tabs have been opened.")
+# import arguments to driver
+driver.args_pause = args.pause
+driver.args_manual = args.manual
+services.handler.service_driver.db_folder = db_folder
+services.handler.service_driver.args_max_scrolls = args.max_scrolls
+services.handler.service_driver.args_nopfp = args.nopfp
+services.handler.service_driver.args_pause = args.pause
 
 # start crawling
+users_scanned = []
 print("Starting...")
 for user in args.users.split(" "):
     print(f'User: {user} (depth: {args.depth})')
     start_crawling(user, args.depth)
 
 # close browser threads
-print("Closing tabs...")
-driver.Shared.close_tabs()
+if args.session:
+    print("Closing tabs...")
+    driver.close_tabs()
 
 print("Finished.")

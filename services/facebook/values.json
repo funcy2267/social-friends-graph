@@ -1,0 +1,28 @@
+{
+    "driver": {
+        "full_name": {
+            "description": "User full name",
+            "location": "example.user"
+        },
+        "profile_pic": {
+            "description": "User profile picture",
+            "location": "example.user",
+            "xpath_overwrite": "../../../.."
+        },
+        "friend_pfp": {
+            "description": "Friend profile picture",
+            "location": "example.user?sk=friends_all"
+        },
+        "friend_entry": {
+            "description": "Friend full name",
+            "location": "example.user?sk=friends_all",
+            "xpath_overwrite": ".."
+        }
+    },
+    "urls": {
+        "DEFAULT_URL": "https://www.facebook.com/",
+        "BASE_URL": "https://www.facebook.com/",
+        "LOGIN_URL": "https://www.facebook.com/login",
+        "LOGIN_END_URL": "https://www.facebook.com"
+    }
+}

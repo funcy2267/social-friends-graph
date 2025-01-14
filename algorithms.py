@@ -3,14 +3,12 @@ import argparse
 from lib import shared
 
 parser = argparse.ArgumentParser(description='Algorithms to perform on database.')
-parser.add_argument('--database', '-d', default='Friends', help='database name')
+parser.add_argument('--database', '-d', help='database name')
 parser.add_argument('--find-path', '-F', help='find path from user A to B through other users | from_user to_user')
 parser.add_argument('--depth', '-D', type=int, default=1, help='max depth')
 parser.add_argument('--bidirectional', '-b', action= 'store_true', help='uses only bidirectional connection')
 parser.add_argument('--reverse', '-r', action='store_true', help='swap provided users')
 args = parser.parse_args()
-
-users_db = shared.db_load(args.database)
 
 def bfs2(v, aim, graph, depth=0, visited=[]):
     global solution
@@ -27,6 +25,7 @@ def bfs2(v, aim, graph, depth=0, visited=[]):
                     elif i not in visited_new:
                         bfs2(i, aim, graph, depth+1, visited_new)
 
+users_db = shared.Database.load(args.database)
 if args.find_path:
     args_find_path_split = args.find_path.split(" ")
     if not args.reverse:
@@ -35,7 +34,7 @@ if args.find_path:
     else:
         args_find_path_from = args_find_path_split[1]
         args_find_path_to = args_find_path_split[0]
-    users_db_graph = shared.db_format_graph(users_db)
+    users_db_graph = shared.Database.format_graph(users_db)
     solution={}
     bfs2(args_find_path_from, args_find_path_to, users_db_graph)
     solution=dict(sorted(solution.items()))
