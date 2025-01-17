@@ -21,14 +21,15 @@ def generate_random_classname(length):
     return ''.join([start_char] + remaining_chars)
 
 def get_element(url, xpath=None):
-    driver.open_url(url, 0)
-    driver.drivers[0].execute_script(f'let classname = "{classname}";'+js_code)
-    driver.drivers[0].execute_script(f"document.head.insertAdjacentHTML('beforeend', `<style>{css_code.replace(".classname", "."+classname)}</style>`);")
+    driver.open_url(url)
+    used_driver = driver.drivers[0]
+    used_driver.execute_script(f'let classname = "{classname}";'+js_code)
+    used_driver.execute_script(f"document.head.insertAdjacentHTML('beforeend', `<style>{css_code.replace(".classname", "."+classname)}</style>`);")
 
-    while driver.drivers[0].find_elements(By.CSS_SELECTOR, '.'+classname) == []:
+    while used_driver.find_elements(By.CSS_SELECTOR, '.'+classname) == []:
         time.sleep(1)
 
-    element = driver.drivers[0].find_element(By.CSS_SELECTOR, f'.{classname}')
+    element = used_driver.find_element(By.CSS_SELECTOR, f'.{classname}')
     if xpath!=None:
         element = element.find_element(By.XPATH, xpath)
     return element

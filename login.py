@@ -8,7 +8,7 @@ import services.handler
 
 parser = argparse.ArgumentParser(description='Session manager.')
 parser.add_argument('service', choices=services.handler.AVAILABLE_SERVICES, help='select one of available services')
-parser.add_argument('--session', '-s', help='session name')
+parser.add_argument('session', help='session name')
 parser.add_argument('--browser', '-b', action='store_true', help='open browser with loaded session')
 args = parser.parse_args()
 
@@ -23,7 +23,7 @@ values = services.handler.set_service(args.service)
 
 if args.browser:
     driver.open_tabs(1, values["urls"]["DEFAULT_URL"], session=args.session)
-    driver.open_url(values["urls"]["DEFAULT_URL"], 0)
+    driver.open_url(values["urls"]["DEFAULT_URL"])
     input("Press enter to close browser window.")
     if input("Update cookies file? [y/n]: ") =="y":
         shared.cookies_dump(driver, args.cookies)

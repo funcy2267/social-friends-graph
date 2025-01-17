@@ -42,7 +42,7 @@ def exec_queue(queue, tab):
     i = 0
     for user in queue:
         print(f'Current user: {user} ({str(i+1)}/{str(len(queue))}, thread {display_thread})')
-        result_get = services.handler.get_friends(user, tab, args.source)
+        result_get = services.handler.get_friends(user, args.source, tab=tab)
         result = shared.deep_update(result, result_get)
         i += 1
     return result
@@ -56,9 +56,9 @@ def start_crawling(username, depth):
 
     # save data about user
     if username not in users_db["display_names"] or args.force==True:
-        users_db["display_names"][username] = services.handler.get_display_name(username, 0)
-    if not args.nopfp and (username+'.png' not in os.listdir(db_folder+shared.db_images_folder) or args.force==True):
-        services.handler.save_pfp(username, 0)
+        users_db["display_names"][username] = services.handler.get_display_name(username)
+    if not args.nopfp and (username+'.png' not in os.listdir(services.handler.service_driver.save_pfp_location) or args.force==True):
+        services.handler.save_pfp(username)
 
     # import blacklist
     blacklist = []
@@ -167,7 +167,7 @@ if service_file_overwrite:
         file.close()
 
 # prepare scanning
-values = services.handler.set_service(args.service)
+values = services.handler.set_service(args.service, mode="scan")
 if args.session:
     print(f'Using {args.session} as session.')
     print("Launching Firefox...")
@@ -177,7 +177,7 @@ if args.session:
 # import arguments to driver
 driver.args_pause = args.pause
 driver.args_manual = args.manual
-services.handler.service_driver.db_folder = db_folder
+services.handler.service_driver.save_pfp_location = db_folder+shared.db_images_folder
 services.handler.service_driver.args_max_scrolls = args.max_scrolls
 services.handler.service_driver.args_nopfp = args.nopfp
 services.handler.service_driver.args_pause = args.pause

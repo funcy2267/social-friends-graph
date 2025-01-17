@@ -15,9 +15,9 @@ args = parser.parse_args()
 
 def get_graph_name(user):
     if not args.usernames:
-        return shared.format_file_name(users_db["display_names"][user])
+        return users_db["display_names"][user]
     else:
-        return shared.format_file_name(user)
+        return user
 
 def db_cleanup():
     files = os.listdir(db_folder)
@@ -44,7 +44,7 @@ if args.generate:
     db_cleanup()
     users_db_graph = shared.Database.format_graph(users_db)
     for user in users_db_graph["users"]:
-        user_name = get_graph_name(user)
+        user_name = shared.format_file_name(get_graph_name(user))
         f_content = f'Username: {user}\nFull name: {users_db_graph["display_names"][user]}\n'
         if shared.format_file_name(user)+'.png' in os.listdir(db_folder+shared.db_images_folder):
             f_content += f'Profile picture:\n![[{shared.db_images_folder+shared.format_file_name(user)}.png]]\n'
@@ -52,7 +52,7 @@ if args.generate:
         for x in users_db_graph["users"][user]:
             if x in ["friends", "following"]:
                 for friend in users_db_graph["users"][user][x]:
-                    friend_name = get_graph_name(friend)
+                    friend_name = shared.format_file_name(get_graph_name(friend))
                     f_content += f'[[{friend_name}]]\n'
         f = open(db_folder+user_name+".md", "w", encoding="utf-8")
         f.write(f_content)

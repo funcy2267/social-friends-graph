@@ -4,15 +4,15 @@ import json
 
 from lib import shared
 
-def get_display_name(username, tab):
+def get_display_name(username, tab=0):
     response = parse_api_response(values["urls"]["BASE_URL"]+'xrpc/app.bsky.actor.getProfile?actor='+username)
     return response["displayName"]
 
-def save_pfp(username, tab):
+def save_pfp(username, tab=0):
     response = parse_api_response(values["urls"]["BASE_URL"]+'xrpc/app.bsky.actor.getProfile?actor='+username)
-    open(db_folder+shared.db_images_folder+username+'.png', 'wb').write(requests.get(response["avatar"]).content)
+    open(save_pfp_location+username+'.png', 'wb').write(requests.get(response["avatar"]).content)
 
-def get_friends(username, tab, source):
+def get_friends(username, source, tab=0):
     match source:
         case "following":
             api_endpoint = "getFollows"
@@ -29,7 +29,7 @@ def get_friends(username, tab, source):
         friend_username = friend["handle"]
         friend_display_name = friend["displayName"]
         if not args_nopfp:
-            open(db_folder+shared.db_images_folder+friend_username+'.png', 'wb').write(requests.get(friend["avatar"]).content)
+            open(save_pfp_location+friend_username+'.png', 'wb').write(requests.get(friend["avatar"]).content)
 
         if friend_username not in friends["users"][username][source]:
             friends["users"][username][source] += [friend_username]

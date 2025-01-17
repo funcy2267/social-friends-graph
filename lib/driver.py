@@ -6,7 +6,7 @@ from lib import shared
 
 drivers = []
 
-def open_url(url, tab):
+def open_url(url, tab=0):
     driver = drivers[tab]
     try:
         if args_manual == False:
@@ -29,7 +29,7 @@ def open_tabs(threads, url, session=None):
     for thread in range(threads):
         print(f'Opening tab {str(thread+1)}/{str(threads)}...')
         drivers += [webdriver.Firefox()]
-        open_url(url, thread)
+        open_url(url, tab=thread)
         if session != None:
             Cookies.load(thread, session)
 

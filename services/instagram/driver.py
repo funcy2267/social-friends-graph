@@ -4,17 +4,17 @@ from selenium.webdriver.common.by import By
 
 from lib import driver, shared
 
-def get_display_name(username, tab):
-    driver.open_url(values["urls"]["BASE_URL"]+username, tab)
+def get_display_name(username, tab=0):
+    driver.open_url(values["urls"]["BASE_URL"]+username, tab=tab)
     return driver.drivers[tab].find_element(By.CSS_SELECTOR, driver.classes_to_css_selector(calibrated_driver_values["full_name"])).text
 
-def save_pfp(username, tab):
-    driver.open_url(values["urls"]["BASE_URL"]+username, tab)
+def save_pfp(username, tab=0):
+    driver.open_url(values["urls"]["BASE_URL"]+username, tab=tab)
     pfp = driver.drivers[tab].find_elements(By.CSS_SELECTOR, driver.classes_to_css_selector(calibrated_driver_values["profile_pic"]))[0]
-    pfp.screenshot(db_folder+shared.db_images_folder+username+'.png')
+    pfp.screenshot(save_pfp_location+username+'.png')
 
-def get_friends(username, tab, source):
-    driver.open_url(values["urls"]["BASE_URL"]+username, tab)
+def get_friends(username, source, tab=0):
+    driver.open_url(values["urls"]["BASE_URL"]+username, tab=tab)
     match source:
         case "following":
             source_button = 1
@@ -40,7 +40,7 @@ def get_friends(username, tab, source):
         if not args_nopfp:
             try:
                 friend_pfp = friends_pfp_list[i+2]
-                friend_pfp.screenshot(db_folder+shared.db_images_folder+friend_username+'.png')
+                friend_pfp.screenshot(save_pfp_location+friend_username+'.png')
             except IndexError:
                 pass
 
