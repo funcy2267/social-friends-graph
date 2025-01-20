@@ -1,5 +1,9 @@
 {
     "urls": {
         "BASE_URL": "https://public.api.bsky.app/"
-    }
+    },
+    "available_sources": [
+        "following",
+        "followers"
+    ]
 }

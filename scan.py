@@ -10,9 +10,9 @@ import services.handler
 parser = argparse.ArgumentParser(description='Connection scanning tool.')
 parser.add_argument('users', help='usernames to scan (separated with spaces)')
 parser.add_argument('service', choices=services.handler.AVAILABLE_SERVICES, help='select one of available services')
+parser.add_argument('database', help='database name')
+parser.add_argument('source', choices=['all', 'following', 'followers', 'friends'], help='select one of available sources')
 parser.add_argument('--session', '-s', help='session name')
-parser.add_argument('--database', '-d', help='database name')
-parser.add_argument('--source', '-S', choices=['following', 'followers', 'all'], default='following', help='select one of available options')
 parser.add_argument('--depth', '-D', type=int, default=1, help='crawling depth (friends of friends)')
 parser.add_argument('--pause', '-p', type=int, default=3, help='seconds to pause after loading a page')
 parser.add_argument('--max-scrolls', '-m', type=int, help='maximum number of scrolls down per page')
@@ -42,7 +42,11 @@ def exec_queue(queue, tab):
     i = 0
     for user in queue:
         print(f'Current user: {user} ({str(i+1)}/{str(len(queue))}, thread {display_thread})')
-        result_get = services.handler.get_friends(user, args.source, tab=tab)
+        try:
+            result_get = services.handler.get_friends(user, args.source, tab=tab)
+        except:
+            print(f'Error while scanning users friends: {user}')
+            result_get = {}
         result = shared.deep_update(result, result_get)
         i += 1
     return result
@@ -56,9 +60,15 @@ def start_crawling(username, depth):
 
     # save data about user
     if username not in users_db["display_names"] or args.force==True:
-        users_db["display_names"][username] = services.handler.get_display_name(username)
+        try:
+            users_db["display_names"][username] = services.handler.get_display_name(username)
+        except:
+            print(f"Error while getting user display name: {username}")
     if not args.nopfp and (username+'.png' not in os.listdir(services.handler.service_driver.save_pfp_location) or args.force==True):
-        services.handler.save_pfp(username)
+        try:
+            services.handler.save_pfp(username)
+        except:
+            print(f"Error while getting user profile picture: {username}")
 
     # import blacklist
     blacklist = []
@@ -106,11 +116,6 @@ def start_crawling(username, depth):
             for thread in thread_results:
                 thread_result = thread_results[thread].get()
                 queue_result = shared.deep_update(queue_result, thread_result)
-
-            # fix empty full names
-            for user in queue_result["display_names"]:
-                if queue_result["display_names"][user] == '':
-                    queue_result["display_names"][user] = user
 
             # update users database
             users_db = shared.deep_update(users_db, queue_result)

@@ -22,7 +22,6 @@ def generate_random_classname(length):
 
 def get_element(url, xpath=None):
     driver.open_url(url)
-    used_driver = driver.drivers[0]
     used_driver.execute_script(f'let classname = "{classname}";'+js_code)
     used_driver.execute_script(f"document.head.insertAdjacentHTML('beforeend', `<style>{css_code.replace(".classname", "."+classname)}</style>`);")
 
@@ -59,6 +58,7 @@ if os.path.exists(shared.user_data_folder+shared.calibrated_driver_values_file):
 # calibration process
 input("During calibration, you will be asked to locate and hover over certain elements on the page. Once you hover over an element, wait 5 seconds and it will be selected. Instructions will be displayed in the terminal. Press enter to continue.")
 driver.open_tabs(1, values["urls"]["DEFAULT_URL"], session=args.session)
+used_driver = driver.drivers[0]
 classname = generate_random_classname(10)
 for html_element in values["driver"].keys():
     if "xpath_overwrite" in values["driver"][html_element].keys():

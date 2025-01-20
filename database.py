@@ -8,13 +8,13 @@ parser = argparse.ArgumentParser(description='Database management tool.')
 parser.add_argument('database', help='database name')
 parser.add_argument('--generate', '-g', action='store_true', help='generate graph from database')
 parser.add_argument('--cleanup', '-c', action='store_true', help='remove markdown files from database')
-parser.add_argument('--usernames', '-u', action='store_true', help='use usernames instead of full names for generating graph')
+parser.add_argument('--usernames', '-u', action='store_true', help='use usernames instead of display names for generating graph')
 parser.add_argument('--query', '-q', help='execute query on database (keys separated with spaces)')
 parser.add_argument('--merge', '-m', help='source database to merge')
 args = parser.parse_args()
 
 def get_graph_name(user):
-    if not args.usernames:
+    if not args.usernames and user in users_db["display_names"].keys():
         return users_db["display_names"][user]
     else:
         return user
@@ -45,7 +45,9 @@ if args.generate:
     users_db_graph = shared.Database.format_graph(users_db)
     for user in users_db_graph["users"]:
         user_name = shared.format_file_name(get_graph_name(user))
-        f_content = f'Username: {user}\nFull name: {users_db_graph["display_names"][user]}\n'
+        f_content = f'Username: **{user}**\n'
+        if not args.usernames:
+            f_content += f'Display name: **{user_name}**\n'
         if shared.format_file_name(user)+'.png' in os.listdir(db_folder+shared.db_images_folder):
             f_content += f'Profile picture:\n![[{shared.db_images_folder+shared.format_file_name(user)}.png]]\n'
         f_content += '\n'

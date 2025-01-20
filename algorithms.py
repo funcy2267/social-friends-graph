@@ -3,7 +3,7 @@ import argparse
 from lib import shared
 
 parser = argparse.ArgumentParser(description='Algorithms to perform on database.')
-parser.add_argument('--database', '-d', help='database name')
+parser.add_argument('database', help='database name')
 parser.add_argument('--find-path', '-F', help='find path from user A to B through other users | from_user to_user')
 parser.add_argument('--depth', '-D', type=int, default=1, help='max depth')
 parser.add_argument('--bidirectional', '-b', action= 'store_true', help='uses only bidirectional connection')

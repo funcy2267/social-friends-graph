@@ -31,7 +31,7 @@ def open_tabs(threads, url, session=None):
         drivers += [webdriver.Firefox()]
         open_url(url, tab=thread)
         if session != None:
-            Cookies.load(thread, session)
+            Cookies.load(session, tab=thread)
 
 def classes_to_css_selector(classes):
     return '.'+classes.replace(' ', '.')
@@ -41,10 +41,10 @@ def close_tabs():
         driver.quit()
 
 class Cookies:
-    def dump(tab, session):
+    def dump(session, tab=0):
         pickle.dump(drivers[tab].get_cookies(), open(shared.sessions_folder+session+".pkl", "wb"))
 
-    def load(tab, session):
+    def load(session, tab=0):
         cookies = pickle.load(open(shared.sessions_folder+session+".pkl", "rb"))
         for cookie in cookies:
             drivers[tab].add_cookie(cookie)

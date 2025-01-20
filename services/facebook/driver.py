@@ -20,7 +20,7 @@ def get_friends(username, source, tab=0):
     friends_pfp_list = driver.drivers[tab].find_elements(By.CSS_SELECTOR, driver.classes_to_css_selector(calibrated_driver_values["friend_pfp"]))
 
     friends = copy.deepcopy(shared.users_db_structure)
-    friends["users"] = {username: {"friends": []}}
+    friends["users"] = {username: {source: []}}
     i=0
     for friend in friends_list:
         friend_username = friend.get_attribute("href").split('/')[3]
@@ -33,7 +33,7 @@ def get_friends(username, source, tab=0):
                 pass
 
         if friend_username not in friends["users"][username]["friends"]:
-            friends["users"][username]["friends"] += [friend_username]
+            friends["users"][username][source] += [friend_username]
             friends["display_names"][friend_username] = friend_full_name
         i+=1
     return friends

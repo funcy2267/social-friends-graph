@@ -2,7 +2,7 @@ import argparse
 import time
 from urllib.parse import urlparse, urlunparse
 
-from lib import shared, driver
+from lib import driver
 
 import services.handler
 
@@ -26,7 +26,7 @@ if args.browser:
     driver.open_url(values["urls"]["DEFAULT_URL"])
     input("Press enter to close browser window.")
     if input("Update cookies file? [y/n]: ") =="y":
-        shared.cookies_dump(driver, args.cookies)
+        driver.Cookies.dump(args.session)
         print("Cookies updated.")
     driver.close_tabs()
     exit()
@@ -40,7 +40,7 @@ while clean_url(driver.drivers[0].current_url) != values["urls"]["LOGIN_END_URL"
     time.sleep(1)
 
 # save cookies
-driver.Cookies.dump(0, args.session)
+driver.Cookies.dump(args.session)
 print("Successfully saved session.")
 
 driver.close_tabs()

@@ -24,5 +24,8 @@
         "BASE_URL": "https://www.facebook.com/",
         "LOGIN_URL": "https://www.facebook.com/login",
         "LOGIN_END_URL": "https://www.facebook.com"
-    }
+    },
+    "available_sources": [
+        "friends"
+    ]
 }
