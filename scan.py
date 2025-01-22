@@ -23,6 +23,7 @@ parser.add_argument('--blacklist', '-b', help='blacklist usernames to avoid scan
 parser.add_argument('--limit', '-l', type=int, help='limit number of users to scan')
 parser.add_argument('--threads', '-t', type=int, default=1, help='number of threads for scanning')
 parser.add_argument('--autosave', '-a', type=int, help='save results every given amount of users scanned')
+parser.add_argument('--debug', action='store_true', help='disable ignoring errors')
 args = parser.parse_args()
 
 def split_list(l, x):
@@ -42,11 +43,14 @@ def exec_queue(queue, tab):
     i = 0
     for user in queue:
         print(f'Current user: {user} ({str(i+1)}/{str(len(queue))}, thread {display_thread})')
-        try:
+        if not args.debug:
+            try:
+                result_get = services.handler.get_friends(user, args.source, tab=tab)
+            except:
+                print(f'Error while scanning users friends: {user}')
+                result_get = {}
+        else:
             result_get = services.handler.get_friends(user, args.source, tab=tab)
-        except:
-            print(f'Error while scanning users friends: {user}')
-            result_get = {}
         result = shared.deep_update(result, result_get)
         i += 1
     return result
@@ -60,15 +64,21 @@ def start_crawling(username, depth):
 
     # save data about user
     if username not in users_db["display_names"] or args.force==True:
-        try:
+        if not args.debug:
+            try:
+                users_db["display_names"][username] = services.handler.get_display_name(username)
+            except:
+                print(f"Error while getting user display name: {username}")
+        else:
             users_db["display_names"][username] = services.handler.get_display_name(username)
-        except:
-            print(f"Error while getting user display name: {username}")
     if not args.nopfp and (username+'.png' not in os.listdir(services.handler.service_driver.save_pfp_location) or args.force==True):
-        try:
+        if not args.debug:
+            try:
+                services.handler.save_pfp(username)
+            except:
+                print(f"Error while getting user profile picture: {username}")
+        else:
             services.handler.save_pfp(username)
-        except:
-            print(f"Error while getting user profile picture: {username}")
 
     # import blacklist
     blacklist = []

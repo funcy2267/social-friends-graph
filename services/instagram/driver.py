@@ -27,9 +27,9 @@ def get_friends(username, source, tab=0):
     if friends_list_element.find_elements(By.XPATH, "./div")[-1].get_attribute('class') != '':
         driver.drivers[tab].execute_script("arguments[0].innerHTML = '';", friends_list_element.find_elements(By.XPATH, "./div")[-2])
     time.sleep(args_pause)
-    friends_list = driver.drivers[tab].find_elements(By.CSS_SELECTOR, driver.classes_to_css_selector(calibrated_driver_values["friend_handle"]))
-    friends_display_name_list = driver.drivers[tab].find_elements(By.CSS_SELECTOR, driver.classes_to_css_selector(calibrated_driver_values["friend_display_name"]))
-    friends_pfp_list = driver.drivers[tab].find_elements(By.CSS_SELECTOR, driver.classes_to_css_selector(calibrated_driver_values["friend_pfp"]))
+    friends_list = friends_list_element.find_elements(By.CSS_SELECTOR, driver.classes_to_css_selector(calibrated_driver_values["friend_handle"]))
+    friends_display_name_list = friends_list_element.find_elements(By.CSS_SELECTOR, driver.classes_to_css_selector(calibrated_driver_values["friend_display_name"]))
+    friends_pfp_list = friends_list_element.find_elements(By.CSS_SELECTOR, driver.classes_to_css_selector(calibrated_driver_values["friend_pfp"]))
 
     friends = copy.deepcopy(shared.users_db_structure)
     friends["users"] = {username: {source: []}}
@@ -39,7 +39,7 @@ def get_friends(username, source, tab=0):
         friend_display_name = friends_display_name_list[i].find_element(By.TAG_NAME, 'span').text
         if not args_nopfp:
             try:
-                friend_pfp = friends_pfp_list[i+2]
+                friend_pfp = friends_pfp_list[i]
                 friend_pfp.screenshot(save_pfp_location+friend_username+'.png')
             except IndexError:
                 pass
