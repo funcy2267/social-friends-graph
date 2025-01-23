@@ -8,7 +8,7 @@ databases_folder = user_data_folder+'Databases/'
 db_images_folder = 'images/'
 sessions_folder = user_data_folder+'Sessions/'
 users_db_file = 'users_db.json'
-users_db_structure = {"display_names": {}, "users": {}}
+users_db_structure = {"display_names": {}, "users": {}, "users_errors": []}
 
 # Recursively merge or update dict-like objects with lists.
 def deep_update(d, u):

@@ -40,6 +40,7 @@ def exec_queue(queue, tab):
     display_thread = str(tab+1)
     print(f'In queue (thread {display_thread}): {queue}\n')
     result = copy.deepcopy(shared.users_db_structure)
+    global users_scanned
     i = 0
     for user in queue:
         print(f'Current user: {user} ({str(i+1)}/{str(len(queue))}, thread {display_thread})')
@@ -48,9 +49,10 @@ def exec_queue(queue, tab):
                 result_get = services.handler.get_friends(user, args.source, tab=tab)
             except:
                 print(f'Error while scanning users friends: {user}')
-                result_get = {}
+                result_get = {"users_errors": [user]}
         else:
             result_get = services.handler.get_friends(user, args.source, tab=tab)
+        users_scanned += [user]
         result = shared.deep_update(result, result_get)
         i += 1
     return result
@@ -62,24 +64,6 @@ def start_crawling(username, depth):
     except:
         users_db = copy.deepcopy(shared.users_db_structure)
 
-    # save data about user
-    if username not in users_db["display_names"] or args.force==True:
-        if not args.debug:
-            try:
-                users_db["display_names"][username] = services.handler.get_display_name(username)
-            except:
-                print(f"Error while getting user display name: {username}")
-        else:
-            users_db["display_names"][username] = services.handler.get_display_name(username)
-    if not args.nopfp and (username+'.png' not in os.listdir(services.handler.service_driver.save_pfp_location) or args.force==True):
-        if not args.debug:
-            try:
-                services.handler.save_pfp(username)
-            except:
-                print(f"Error while getting user profile picture: {username}")
-        else:
-            services.handler.save_pfp(username)
-
     # import blacklist
     blacklist = []
     if args.blacklist != None:
@@ -89,20 +73,39 @@ def start_crawling(username, depth):
     # import already scanned users
     already_scanned = []
     if not args.force:
-        for user in users_db["users"]:
-            if user not in already_scanned:
-                already_scanned += [user]
+        already_scanned += list(users_db["users"].keys()) + users_db["users_errors"]
         print(f'Already scanned users: {already_scanned}')
+
+    # save data about user
+    if username not in users_db["display_names"] or args.force==True:
+        print("Getting user display name:", username)
+        if not args.debug:
+            try:
+                users_db["display_names"][username] = services.handler.get_display_name(username)
+            except:
+                print(f"Error while getting user display name: {username}")
+        else:
+            users_db["display_names"][username] = services.handler.get_display_name(username)
+    if not args.nopfp and (username+'.png' not in os.listdir(services.handler.service_driver.save_pfp_location) or args.force==True):
+        print("Getting user profile picture:", username)
+        if not args.debug:
+            try:
+                services.handler.save_pfp(username)
+            except:
+                print(f"Error while getting user profile picture: {username}")
+        else:
+            services.handler.save_pfp(username)
 
     # scanning system
     queue = []
     next_result = copy.deepcopy(shared.users_db_structure)
-    if username in already_scanned:
+    next_round = []
+    global users_scanned
+
+    if username in users_db["users"] and not args.force:
         next_result["users"][username] = copy.deepcopy(users_db["users"][username])
     else:
         queue += [username]
-    next_round = []
-    global users_scanned
     for depth_index in range(depth):
         print(f'\nCurrent depth: {depth_index+1}')
         for queue_chunk in split_list(queue, args.autosave):
@@ -128,17 +131,19 @@ def start_crawling(username, depth):
                 queue_result = shared.deep_update(queue_result, thread_result)
 
             # update users database
-            users_db = shared.deep_update(users_db, queue_result)
             for user in queue_result["users"]:
-                for x in queue_result["users"][user]:
-                    for friend in queue_result["users"][user][x]:
-                        if not any(friend in i for i in [queue, users_scanned, next_round, blacklist, already_scanned]):
-                            if not args.limit or (args.limit and len(users_scanned)+len(next_round) < args.limit):
-                                next_round += [friend]
-                        elif friend in already_scanned:
+                if user in users_db["users_errors"]:
+                    users_db["users_errors"].remove(user)
+            users_db = shared.deep_update(users_db, queue_result)
+
+            # prepare for next round
+            for user in queue_result["users"]:
+                for source in queue_result["users"][user]:
+                    for friend in queue_result["users"][user][source]:
+                        if (not any(friend in i for i in [queue, users_scanned, next_round, blacklist, already_scanned])) and (not args.limit or (args.limit and len(users_scanned)+len(next_round) < args.limit)):
+                            next_round += [friend]
+                        elif friend in users_db["users"]:
                             next_result["users"][friend] = copy.deepcopy(users_db["users"][friend])
-                if user not in users_scanned:
-                    users_scanned += [user]
 
             # autosave
             if args.autosave and queue_chunk != []:
@@ -209,4 +214,4 @@ if args.session:
     print("Closing tabs...")
     driver.close_tabs()
 
-print("Finished.")
+print("\nFinished.")
