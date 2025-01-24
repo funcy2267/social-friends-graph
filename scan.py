@@ -23,7 +23,7 @@ parser.add_argument('--blacklist', '-b', help='blacklist usernames to avoid scan
 parser.add_argument('--limit', '-l', type=int, help='limit number of users to scan')
 parser.add_argument('--threads', '-t', type=int, default=1, help='number of threads for scanning')
 parser.add_argument('--autosave', '-a', type=int, help='save results every given amount of users scanned')
-parser.add_argument('--debug', action='store_true', help='disable ignoring errors')
+parser.add_argument('--debug', action='store_true', help='disable ignoring driver errors')
 args = parser.parse_args()
 
 def split_list(l, x):
@@ -41,6 +41,7 @@ def exec_queue(queue, tab):
     print(f'In queue (thread {display_thread}): {queue}\n')
     result = copy.deepcopy(shared.users_db_structure)
     global users_scanned
+    global users_errors
     i = 0
     for user in queue:
         print(f'Current user: {user} ({str(i+1)}/{str(len(queue))}, thread {display_thread})')
@@ -49,6 +50,7 @@ def exec_queue(queue, tab):
                 result_get = services.handler.get_friends(user, args.source, tab=tab)
             except:
                 print(f'Error while scanning users friends: {user}')
+                users_errors += [user]
                 result_get = {"users_errors": [user]}
         else:
             result_get = services.handler.get_friends(user, args.source, tab=tab)
@@ -100,7 +102,6 @@ def start_crawling(username, depth):
     queue = []
     next_result = copy.deepcopy(shared.users_db_structure)
     next_round = []
-    global users_scanned
 
     if username in users_db["users"] and not args.force:
         next_result["users"][username] = copy.deepcopy(users_db["users"][username])
@@ -157,9 +158,6 @@ def start_crawling(username, depth):
         shared.Database.dump(args.database, users_db)
         print("Database saved.")
 
-    # print summary
-    print(f'\nUsers scanned: {users_scanned} | {len(users_scanned)} users')
-
 print(f'Using {args.database} as database.')
 db_folder = shared.databases_folder+args.database+'/'
 
@@ -204,10 +202,16 @@ services.handler.service_driver.args_pause = args.pause
 
 # start crawling
 users_scanned = []
+users_errors = []
 print("Starting...")
 for user in args.users.split(" "):
     print(f'User: {user} (depth: {args.depth})')
     start_crawling(user, args.depth)
+
+# print summary
+print(f'\nUsers scanned: {users_scanned} | {len(users_scanned)} users')
+if users_errors != []:
+    print(f'Errors: {users_errors} | {len(users_errors)} users')
 
 # close browser threads
 if args.session:

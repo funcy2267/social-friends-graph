@@ -27,8 +27,11 @@ def get_friends(username, source, tab=0):
     i=0
     for friend in response[api_value]:
         friend_username = friend["handle"]
-        friend_display_name = friend["displayName"]
-        if not args_nopfp:
+        try:
+            friend_display_name = friend["displayName"]
+        except:
+            friend_display_name = friend["handle"]
+        if not args_nopfp and "avatar" in friend:
             open(save_pfp_location+friend_username+'.png', 'wb').write(requests.get(friend["avatar"]).content)
 
         if friend_username not in friends["users"][username][source]:
